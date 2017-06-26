@@ -1,0 +1,256 @@
+# this is draft #1 of the comprehensive WebAPI specification for interfacing with the AMDOCS Order Engine
+swagger: '2.0'
+info:
+  title: Gateway Ordering API - AMDOCS Interface (BrowsingCategories&Filters)
+  description: This specification defines the interface between WebAPI and the AMDOCS Ordering Engine.
+  version: "1.0.0"
+# the domain of the service
+host: gateway.chartercom.com
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+
+  /commerce/browsing-category-structure:
+    get:
+      summary: Retrieve the browsing category structure from the catalog
+      description: Retrieve a list of browsing categories, sub-categories, and filters
+      parameters:
+        - name: username
+          in: header
+          type: string
+          description: authentication username for proxy connection
+          required: true
+        - name: password
+          in: header
+          type: string
+          description: authentication password for proxy connection
+          required: true
+        - name: applicationID
+          in: header
+          type: string
+          description: Unique designation for the invoking application (e.g. GatewayOrdering)
+          required: true
+        - name: timestamp
+          in: header
+          type: integer
+          format: int64
+          description: time the REST call was invoked, in EpochTime format
+          required: true
+        - name: sc
+          required: true
+          in: query
+          type: string
+          description: Sales Channel identifier (default = CC)
+        - name: locale
+          required: true
+          in: query
+          type: string
+          description: Locale identifier, used for language translation (default = en_US)
+          
+      tags:
+        - Engine Startup    
+      responses:
+        200:
+          description: Successful completion; return array of categories, subcategories & filters
+          schema:
+              $ref: '#/definitions/ImplBrowsingCategoriesStructureResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+ 
+definitions:
+  
+  ImplBrowsingCategoriesStructureResponse:
+    properties:
+      implBrowsingCategoriesStructureOutput:
+        type: obejct
+        $ref: '#/definitions/implBrowsingCategoriesStructureOutput'
+        description: Main output
+      transactionId:
+        type: string
+        description: A unique ID for a certain REST call
+      timeStamp:
+        type: integer
+        description: The time of the response Expected Date as Long (Epoch time format)
+      implErrorInfo:
+        type: array
+        items:
+          $ref: '#/definitions/ImplErrorInfo'
+        description: Used for business errors
+  
+  ImplErrorInfo:
+    properties:
+      errorCode:
+        type: string
+        description: Error code, single string
+      errorMessage:
+        type: string
+        description: Error message
+      Description:
+        type: string
+        description: Description of the error (human-readable)
+      errorUUID:
+        type: string
+        description: Unique number to identify the error event
+        
+
+  CommonErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+          type: integer
+          format: int64
+          description: time the REST call was returned, in EpochTime format
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/CommonErrors"
+  
+  CommonErrors:
+    properties:
+      errCode:
+        type: string
+      errMessage:
+        type: string
+      errDescription:
+        type: string
+      errGUID:
+        type: string
+
+  FlexAttributeValue:
+    properties:
+      integerValue:
+        type: integer
+        description: Integer Value
+      stringValue:
+        type: string
+        description: String Value
+      dateValue:
+        type: integer
+        format: int64
+        description: Date Value, in EpochTime format
+      decimalValue:
+        type: number
+        format: double
+        description: Decimal Value
+      booleanValue:
+        type: boolean
+        description: Boolean Value
+      valueType: 
+        type: string
+        description: Data type for the defined attribute; only the corresponding value should be referenced.
+        enum:
+          - BOOLEAN
+          - DATE
+          - DECIMAL
+          - INTEGER
+          - STRING
+        
+  FlexAttr:
+    properties:
+      name:
+        type: string
+        description: Custom attribute name
+      value: 
+        type: object
+        $ref: '#/definitions/FlexAttributeValue'
+        description: Custom attribute value
+        
+  implBrowsingCategoriesStructureOutput:
+    properties:
+      categories:
+        type: array
+        items:
+          $ref: '#/definitions/implBrowsingCategory'
+          
+  implBrowsingCategory:
+    properties:
+      category:
+        type: object
+        $ref: '#/definitions/BrowsingCategory'
+        description: Category properties
+      childCategories:
+        type: array
+        items:
+          $ref: '#/definitions/BrowsingCategoryStructure'
+        description: Child Category Properties
+      id:
+        type: string
+        description: Category Instance ID
+        
+  BrowsingCategory:
+    properties:
+      filterFacets:
+        type: array
+        items:
+          $ref: '#/definitions/FilterFacet'
+        description: Filter facets list
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+      name:
+        type: string
+        description: Category name
+      type: 
+        type: string
+        enum:
+          - NAVIGATION
+        description: Value will be NAVIGATION as this category is used for navigating the structure
+      id:
+        type: string
+        description: Category ID
+      description: 
+        type: string
+        description: Category description
+        
+  FilterFacet:
+    properties:
+      name: 
+        type: string
+        description: Free format short textual descrption
+      id:
+        type: string
+        description: A unique identifier for the facet
+      values:
+        type: array
+        items: 
+          $ref: '#/definitions/FilterFacetValue'
+      code:
+        type: string
+        description: A unique identifier for the facet that is human readable
+        
+  FilterFacetValue:
+    properties:
+      valueTo:
+        type: string
+        description: The upper value that a range-type item property can take on.
+      value:
+        type: string
+        description: A value that the item can take on.  In the case of a range value, this represents the lower value of the range.
+      id:
+        type: string
+        description: A unique identifier; provider write only.
+        
+  BrowsingCategoryStructure:
+    properties:
+      category:
+        type: object
+        $ref: '#/definitions/BrowsingCategory'
+        description: Category properties
+      childCategories:
+        type: array
+        items:
+          $ref: '#/definitions/BrowsingCategoryStructure'
+        description: Child Category Properties
+      id:
+        type: string
+        description: Category ID

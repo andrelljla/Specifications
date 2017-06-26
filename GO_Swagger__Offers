@@ -1,0 +1,2558 @@
+# this is draft #1 of the comprehensive WebAPI specification for interfacing with the AMDOCS Order Engine
+swagger: '2.0'
+info:
+  title: Gateway Ordering API - AMDOCS Interface (Offers)
+  description: This specification defines the interface between WebAPI and the AMDOCS Ordering Engine.
+  version: "1.0.0"
+# the domain of the service
+host: gateway.chartercom.com
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+
+  /commerce/browsing-category-structure:
+    get:
+      summary: Retrieve the browsing category structure from the catalog
+      description: Retrieve a list of browsing categories, sub-categories, and filters
+      parameters:
+        - name: username
+          in: header
+          type: string
+          description: authentication username for proxy connection
+          required: true
+        - name: password
+          in: header
+          type: string
+          description: authentication password for proxy connection
+          required: true
+        - name: applicationID
+          in: header
+          type: string
+          description: Unique designation for the invoking application (e.g. GatewayOrdering)
+          required: true
+        - name: timestamp
+          in: header
+          type: string
+          description: time the REST call was invoked
+          required: true
+        - name: sc
+          required: true
+          in: query
+          type: string
+          description: Sales Channel identifier
+        - name: locale
+          required: true
+          in: query
+          type: string
+          description: Locale identifier, used for language translation
+      tags:
+        - Engine Startup    
+      responses:
+        200:
+          description: Successful completion; return array of categories, subcategories & filters
+          schema:
+              $ref: '#/definitions/implBrowsingCategoriesStructureOutput'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+  
+  /commerce/customer/{customer-id}/create-assigned-products:
+    post:
+      summary: Create an assigned product structure OE.
+      description: REST service will create an assigned product structure in the Ordering Engine (OE) system.  This structure is required to initiate any non-NewConnect processes.
+      parameters:
+        - name: customer-id
+          in: path
+          type: string
+          required: true
+          description: Unique identifier for the customer; default to 0 for anonymous or new customers
+        - name: offers
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/implCreateAssignedProductsRequest'
+
+      tags:
+        - Create Assigned Product    
+      responses:
+        200:
+          description: Successful completion; return array of categories, subcategories & filters
+          schema:
+              $ref: '#/definitions/implCreateAssignedProductsResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+        
+
+  /commerce/customer/{customer-id}/browsing-category-structure/{browsing-category-structure-id}/retrieve-catalog-items:
+    post:
+      summary: Docref W3 - Retrieve the eligible offers for this customer and location
+      description: |
+        This REST service will enable the Charter Gateway system to retrieve the eligible offers for a customer, to display them on the screen to the user.  All the available offers will be defined in MEC and will be under a single category.  Having all the available offers defined under a single category by MEC, enables retrieving all the available eligible offers, which enables Charter Gateway to handle filtering and searching at the UI level, by using the offer attributes defined by MEC.
+      parameters:
+        - name: customer-id
+          in: path
+          type: string
+          required: true
+          description: Unique identifier for the customer; default to 0 for anonymous or new customers
+        - name: browsing-category-structure-id
+          in: path
+          type: string
+          required: true
+          description: Browsing category structure ID; default to 1 
+        - name: username
+          in: header
+          type: string
+          description: authentication username for proxy connection
+          required: true
+        - name: password
+          in: header
+          type: string
+          description: authentication password for proxy connection
+          required: true
+        - name: applicationID
+          in: header
+          type: string
+          description: Unique designation for the invoking application (e.g. GatewayOrdering)
+          required: true
+        - name: timestamp
+          in: header
+          type: string
+          description: time the REST call was invoked
+          required: true
+        - name: sc
+          required: true
+          in: query
+          type: string
+          description: Sales Channel identifier
+        - name: locale
+          required: true
+          in: query
+          type: string
+          description: Locale identifier, used for language translation
+        - name: pageSize
+          required: true
+          in: query
+          type: integer
+          description: Enables the consumer to retrieve a set quantity of results; default will be 10.
+        - name: implCategoryItemsInput
+          in: body
+          schema: 
+              $ref: '#/definitions/implCategoryItemsInput'
+          required: true
+          description: Additional information to support serviceability and eligibility determination
+      tags:
+        - W3    
+      responses:
+        200:
+          description: Successful completion; return array of offers
+          schema:
+              $ref: '#/definitions/implRetrieveCatalogItemsResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /commerce/customer/{customer-id}/product-order/create-order:
+    post:
+      summary: Docref W4_step1 - Create a base order in OrderEngine
+      description: The REST enables order creation, by providing the selected eligible offer IDs as input.   The result of the Create Order for COP REST is the required order with a set of order actions (one order action per product in the offer) is created.  This service will return an order ID after the order and all included order actions were created successfully.
+      parameters:
+        - name: customer-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: username
+          in: header
+          type: string
+          description: authentication username for proxy connection
+          required: true
+        - name: password
+          in: header
+          type: string
+          description: authentication password for proxy connection
+          required: true
+        - name: applicationID
+          in: header
+          type: string
+          description: Unique designation for the invoking application (e.g. GatewyOrdering)
+          required: true
+        - name: timestamp
+          in: header
+          type: string
+          description: time the REST call was invoked
+          required: true
+        - name: sc
+          required: true
+          in: query
+          type: string
+          description: Sales Channel identifier
+        - name: locale
+          required: true
+          in: query
+          type: string
+          description: Locale idenitifier, used for language translation
+        - name: createOrder
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/implCreateOrderRequest'
+      tags:
+        - W4_Step1
+      responses:
+        200:
+          description: Succesful order creation; return order object
+          schema:
+            $ref: '#/definitions/implCreateOrderResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /commerce/customer/{customer-id}/product-order/{product-order-id}/product-order-items:
+    get:
+      summary: Docref W4_step2 - retrieve Products for the selected offer(s) in the order.
+      description: The Product Order Items REST service retrieves high level information of products and associated Order Actions which are included in the current order based on the OE Order ID provided as input. This information will be used later for retrieving the configuration per product. Must be called once separately for each offer selected for inclusion in the order. 
+      parameters:
+#        - 
+#          name: offerID
+#          in: path
+#          type: integer
+#          required: true
+#          description: Unique Identifier for the active OrderEngine order; returned in the result of the createOrder call (W4_Step1).
+#        - name: offerProducts
+#          in: body
+#          required: true
+#          schema:
+#            $ref: '#/definitions/implGetProductOrderItemsRequest'
+        - name: customer-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: product-order-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: username
+          in: header
+          type: string
+          description: authentication username for proxy connection
+          required: true
+        - name: password
+          in: header
+          type: string
+          description: authentication password for proxy connection
+          required: true
+        - name: applicationID
+          in: header
+          type: string
+          description: Unique designation for the invoking application (e.g. GatewayOrdering)
+          required: true
+        - name: timestamp
+          in: header
+          type: string
+          description: time the REST call was invoked
+          required: true
+        - name: sc
+          required: true
+          in: query
+          type: string
+          description: Sales Channel identifier
+        - name: locale
+          required: true
+          in: query
+          type: string
+          description: Locale identifier, used for language translation
+      tags:
+        - W4_Step2
+      responses:
+        200:
+          description: Succesful operation; return products associated with selected offers
+          schema:
+            $ref: '#/definitions/implGetProductOrderItemsResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /commerce/customer/{customer-id}/product-order/{product-order-item-id}/product-configuration-options:
+    post:
+      summary: Docref W4_step3 - Get customization details
+      description: The Product Configuration Options REST retrieves the product configuration of a product in an order from Ordering system. The returned configuration includes the current implemented configuration and all the available changes that can be applied on the product within the order. This REST is expected to be called by Charter per each Order Action ID retrieves from Product Order Items REST.
+      parameters:
+        - name: customer-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: product-order-item-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: username
+          in: header
+          type: string
+          description: authentication username for proxy connection
+          required: true
+        - name: password
+          in: header
+          type: string
+          description: authentication password for proxy connection
+          required: true
+        - name: applicationID
+          in: header
+          type: string
+          description: Unique designation for the invoking application (e.g. GatewayOrdering)
+          required: true
+        - name: timestamp
+          in: header
+          type: string
+          description: time the REST call was invoked
+          required: true
+        - name: sc
+          required: true
+          in: query
+          type: string
+          description: Sales Channel identifier
+        - name: locale
+          required: true
+          in: query
+          type: string
+          description: Locale identifier, used for language translation
+        - name: getProductConfigurationOptions
+          in: body
+          schema:
+            $ref: '#/definitions/implRetrieveProductInOrderConfigurationRequest'
+          required: true
+          description: <dr>
+
+      tags:
+        - W4_Step3
+      responses:
+        200:
+          description: Succesful operation; return products associated with selected offers
+          schema:
+            $ref: '#/definitions/implProductConfigurationOptionsResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /commerce/customers/{customer-id}/product-order-id/{product-order-id}/product-configurations:
+    put:
+      summary: Docref W22 - Validate the Order against MEC rules
+      description: The Product Configurations REST is called after the user finishes configuring all the products, and enables the user to validate the configuration and save it in the Ordering system for all the products.  The input of the Product Configurations REST includes all the active order actions in the order, and the configuration changes made for each product, to validate and save all products in the order via the Ordering system.
+      parameters:
+        - name: username
+          in: header
+          type: string
+          description: authentication username for proxy connection
+          required: true
+        - name: password
+          in: header
+          type: string
+          description: authentication password for proxy connection
+          required: true
+        - name: applicationID
+          in: header
+          type: string
+          description: Unique designation for the invoking application (e.g. GatewayOrdering)
+          required: true
+        - name: timestamp
+          in: header
+          type: string
+          description: time the REST call was invoked
+          required: true
+        - name: sc
+          required: true
+          in: query
+          type: string
+          description: Sales Channel identifier
+        - name: locale
+          required: true
+          in: query
+          type: string
+          description: Locale identifier, used for language translation
+        - name: customer-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: product-order-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: createOrder
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/implProductConfigurationRequest'
+      tags:
+        - W22
+      responses:
+        200:
+          description: Succesful order creation; return order object
+          schema:
+            $ref: '#/definitions/implProductConfigurationResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+
+definitions:
+
+#  <NewStructureName>:
+#    properties:
+#      foo:
+#        type: integer
+  
+#  CommonInputHeader:
+#    properties:
+#      username:
+#        type: string
+#        description: Encrypted username for proxy user authentication
+#      password:
+#        type: string
+#        description: Encrypted passaord for proxy user authentication
+#      invokingUser:
+#        type: string
+#        description: User name for the actual user that invoked the call (for audit purpose)
+#     applicationID:
+#        type: string
+#        description: Code identifying invoking application
+#      lineageID:
+#        type: integer
+#        description: Unique transaction identifier; used for transactional error handling
+#      timestamp:
+#        type: string
+#        description: Time that the service call was invoked
+        
+#  OrderEngineHeader:
+#    properties:
+#      locale: 
+#        type: string
+#        description: Localization variable identifying the language of the returned data set (default EN)
+#      salesChannel:
+#        type: string
+#        description: Variable used to define the sales channel through which the invocation was made; likely a more detailed data around applicationID.
+
+  CommonNoErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+
+  CommonErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/CommonErrors"
+  
+  CommonErrors:
+    properties:
+      errCode:
+        type: string
+      errMessage:
+        type: string
+      errDescription:
+        type: string
+      errGUID:
+        type: string
+
+  implCategoryItemsInput:
+    properties:
+      sortType:
+        type: string
+        description: Sorting will be done according to the value that will be sent
+      includeExpiredOfferings:
+        type: boolean
+        description: If value is TRUE, return expired ProductOfferings and PriceSchemas according to the requested, in addition to the not expired entities.  If no value is sent, will default to FALSE.
+      sortAscending:
+        type: boolean
+        description: Default will be ascending order (TRUE).  If false, sort in descending order.
+      customerID:
+        type: string
+        description: ID of the customer.  In the case of a new customer, default to 0.  JLA - Duplicate of path variable?
+      includeEligibleOfferingOnly:
+        type: boolean
+        description: If True, return only elible offers.  If False, return all offers.
+      includeAtLeastInputLOBs:
+        type: boolean
+        description: If the value is TRUE, return all the eligible and sellable PRoductOfferings having at least those lines of business specified in the ProductOfferingFilterInfo.lineOfBusiness that contains the matching result
+      text:
+        type: string
+        description: A free text string input based on which the search criteria is performed on the ProductOfferings and ProductSpecification data
+      serviceabilityObject:
+        type: object
+        description:  Additional information to support serviceability and offer eligbility
+        $ref: '#/definitions/serviceabilityObject'
+        
+  serviceabilityObject:
+    properties:
+      sys:
+        type: string
+        description: Value of SYS
+      prin:
+        type: string
+        description: Value of PRIN
+      agent:
+        type: string
+        description: Value of AGENT
+      LOBServiceability:
+        type: array
+        items:
+          $ref: '#/definitions/LOBServiceability'
+      availabilityGroup:
+        type: string
+        description: Parameter used for phone
+      dwellType:
+        type: string
+        description: Type used for competitive area     
+      customerIsNew:
+        type: boolean
+        description: Indicator to indicate whether this is a new (TRUE) or existing (FALSE) customer
+      customerHasActiveAccount:
+        type: boolean
+        description: Indicator to indicate whether the customer has n active account (TRUE) or not (FALSE)
+      customerType:
+        type: string
+        description: Business or Residential - all Residential in current release
+        enum:
+        - Business
+        - Residential
+      orderActionType:
+        type: string
+        description: Constrained LoV for Action Type (CH - Change, CE - Cease, SU - Suspend, HM - Change Move, RT - Restart, CR - Cease Restart, PR - Provide)
+        enum:
+        - CH
+        - CE
+        - SU
+        - HM
+        - RT
+        - CR
+        - PR
+      userRole:
+        type: string
+        description: User Role (CSR or manager)
+        enum: 
+        - manager
+        - CSR
+      offerCode:
+        type: array
+        items: 
+          type: string
+        description: list of specific offer codes or IDs
+      additional attributes:
+        type: array
+        items:
+          $ref: '#/definitions/AdditionalAttribute'
+        description: If some of the parameters for eligibility rules/serviceability are necessary (and were not in the initial list) can be added here
+
+  LOBServiceability:
+    properties:
+      LOBName:
+        type: string
+        description: Line Of Business name
+      LOBServiceStatus:
+        type: string
+        description: An indication if the LOB is serviceable or not
+
+  implRetrieveCatalogItemsResponse:
+    properties:
+      implBaseReturn:
+        type: object 
+        $ref: "#/definitions/CommonNoErrorReturn"
+      implSearchResults:
+        type: object
+        $ref: '#/definitions/implSearchResults'
+        
+  implCreateAssignedProductsRequest:
+    properties:
+      implOffers:
+        type: array
+        items:
+          $ref: '#/definitions/implOffers'
+      orderLevelAttributes:
+        type: array
+        items: 
+          $ref: '#/definitions/FlexAttr'
+  
+  implOffers:
+    properties:
+      catalogID:
+        type: string
+        description: Unique identifier in the MEC product catalog
+      pcVersionID:
+        type: string
+        description: Catalog version of the item
+      attribute:
+        type: array
+        items:
+          $ref: '#/definitions/implAttribute'
+      product:
+        type: array
+        items:
+          $ref: '#/definitions/implProduct'
+      externalApID:
+        type: string
+        description: External identifier (from SOLO)
+        
+        
+  implCreateOrderRequest:
+    properties:
+      addressID:
+        type: string
+        description: <description required>
+      userID:
+        type: string
+        description: <description required>
+      ImplOfferID:
+        type: array
+        items:
+          $ref: '#/definitions/OrderOffer'
+        description: <description required>
+      serviceRequiredDate:
+        type: string
+        format: date
+        description: <description required>
+#      orderActionType:
+#        type: string
+#        description: <description required>
+      ImplAssignedProduct:
+        type: array
+        items:
+          $ref: '#/definitions/AssignedProduct'
+
+  implAttribute:
+    properties:
+      pid:
+        type: string
+        description: Unique Property ID (from MEC)
+      propertyName:
+        type: string
+        description: Unique Property ID (from MEC)
+      value:
+        type: string
+        description: <dr>
+      isVisible:
+        type: boolean
+        description: <dr>
+      isEditable:
+        type: boolean
+        description: <dr>
+      isMandatory:
+        type: boolean
+        description: <dr>
+
+  implProduct:
+    properties:
+      cid:
+        type: string
+        description: CatalogID of the product/component
+      pcVersionID:
+        type: string
+        description: <dr>
+      component:
+        type: array
+        items:
+          $ref: '#/definitions/implComponent'
+      offerCID:
+        type: string
+        description: <dr>
+      externalAPID:
+        type: string
+        description: <dr>
+      relationID:
+        type: string
+        description: <dr>
+        
+  implComponent:
+    properties:
+      cid:
+        type: string
+        description: CatalogID of the product/component
+      pcVersionID:
+        type: string
+        description: <dr>
+      attribute:
+        type: array
+        items:
+          $ref: '#/definitions/implAttribute'
+      component:
+        type: array
+        items:
+          $ref: '#/definitions/implComponent'
+      externalAPID:
+        type: string
+        description: <dr>
+      pricePlan:
+        type: array
+        items:
+          $ref: '#/definitions/implPricePlan'
+        description: <dr>
+      relationID:
+        type: string
+        description: <dr>      
+  
+  implPricePlan:
+    properties:
+      cid:
+        type: string
+        description: CatalogID of the product/component
+      pcVersionID:
+        type: string
+        description: <dr>
+      externalAPID:
+        type: string
+        description: <dr>
+      relationID:
+        type: string
+        description: <dr>      
+
+  implCreateAssignedProductsResponse:
+    properties:
+      implBaseReturn:
+        type: object 
+        $ref: "#/definitions/CommonNoErrorReturn"    
+      implAssignedProductID:
+        type: object 
+        $ref: "#/definitions/implAssignedProduct"    
+
+  implCreateOrderResponse:
+    properties:
+      implBaseReturn:
+        type: object 
+        $ref: "#/definitions/CommonNoErrorReturn"    
+      orderID:
+        type: string
+        description: Unique identifier (within Order Engine) used by Gateway Ordering for all communication with Order Engine during the transaction. 
+
+  implAssignedProduct:
+    properties:
+      apID:
+        type: string
+        description: <dr>
+      externalAPID:
+        type: string
+        description: <dr>
+      
+  implGetProductOrderItemsResponse:
+    properties:
+      implBaseReturn:
+        type: object 
+        $ref: "#/definitions/CommonNoErrorReturn"
+      implProductOrderItemHeaders:
+        type: object
+        $ref: '#/definitions/implProductOrderItemHeaders'
+
+  implProductOrderItemHeaders:
+    properties:
+      implBaseReturn:
+        type: object 
+        $ref: "#/definitions/CommonNoErrorReturn"
+      mecProductConfigOptions:
+        type: object
+        $ref: '#/definitions/mecProductConfigOptions'
+  
+  implProductConfigurationOptionsResponse:
+    properties:
+      implBaseReturn:
+        type: object 
+        $ref: "#/definitions/CommonNoErrorReturn"
+      implRetrieveProductOrderConfigurationResponse:
+        type: object
+        $ref: "#/definitions/ImplRetrieveProductInOrderConfigurationResponse"
+        
+#############
+  OrderOffer:
+    properties:
+      offerID:
+        type: string
+        description: Offer catalog ID
+      orderActionType:
+        type: string
+        description: Order action type for this offer
+        enum:
+          - PR
+          - PV
+        
+  AssignedProduct:
+    properties:
+      apID:
+        type: string
+        description: Assigned Product ID
+      orderActionType:
+        type: string
+        description: action type for this specific product
+        enum:
+         - CH
+         - CE
+         - SU
+         - HM
+         - RT
+         - CR
+
+  FlexAttributeValue:
+    properties:
+      integerValue:
+        type: integer
+        description: Integer Value
+      stringValue:
+        type: string
+        description: String Value
+      dateValue:
+        type: string
+        format: date
+        description: Date Value
+      decimalValue:
+        type: number
+        format: double
+        description: Decimal Value
+      booleanValue:
+        type: boolean
+        description: Boolean Value
+      valueType: 
+        type: string
+        description: Data type for the defined attribute; only the corresponding value should be referenced.
+        enum:
+          - BOOLEAN
+          - DATE
+          - DECIMAL
+          - INTEGER
+          - STRING
+        
+  FlexAttr:
+    properties:
+      name:
+        type: string
+        description: Custom attribute name
+      value: 
+        type: object
+        $ref: '#/definitions/FlexAttributeValue'
+        description: Custom attribute value
+        
+  AdditionalAttribute:
+    properties:
+      name:
+        type: string
+        description: Custom attribute name
+      value: 
+        type: string
+        description: Custom attribute value
+        
+  ContainingOffering:
+    properties:
+      offeringID:
+        type: string
+        description: <description required>
+      productSpecIDs:
+        type: array
+        items: 
+          type: string
+      offeringToProductIDs:
+        type: array
+        items:
+          type: string
+  
+#  implCreateOrderInput:
+
+  Attachment:
+    properties:
+      purpose: 
+        type: string
+        description: <description required>
+      attachmentLocation:
+        type: string
+        description: <description required>
+      type:
+        type: string
+        description: <description required>
+
+  implCalculatedPrice:
+    properties:
+      ppCID:
+        type: string
+        description: <description required>
+      ppType:
+        type: string
+        description: <description required>
+      tierFrom:
+        type: string
+        description: <description required>
+      tierTo:
+        type: string
+        description: <description required>
+      quantityAtt:
+        type: string
+        description: <description required>
+      quantityFrom:
+        type: integer
+        description: <description required>
+      quantityTo:
+        type: integer
+        description: <description required>
+      amountType:
+        type: string
+        description: <description required>
+      amount:
+        type: integer
+        description: <description required>
+      quantity:
+        type: integer
+        description: <dr>
+      provisioningDate:
+        type: string
+        format: date
+        description: <dr>
+      
+  SearchResult:
+    properties:
+      catalogPrices:
+        type: array
+        items:
+          $ref: '#/definitions/implCalculatedPrice'
+        description: Calculated price by type
+#        lob:
+#          type: string
+#          description: Single Line of business (TV, INTERNET, or PHONE)
+      lob:
+        type: array
+        items: 
+          type: string
+        description: Line(s) of business (combination of TV, INTERNET, PHONE)   
+      catalogItemID:
+        type: string
+        description: Catalog ID for the item
+      catalogItemName:
+        type: string
+        description: Name by which the offer is commonly referenced
+      businessType:
+        type: string
+        description: Representation of the business type of item in the search result
+      catalogItemDescription:
+        type: string
+        description: <description required>
+      catalogItemImage:
+        type: string
+        description: <description required>
+      attachments:
+        type: array
+        items:
+          $ref: '#/definitions/Attachment'
+      planType:
+        type: string
+        description: Represents if plans are either Pre-paid (PRE) or post-paid (POST)
+      minNumOfSubscribers:
+        type: string
+        description: <description required>
+      numOfSubscribers:
+        type: string
+        description: <description required>
+      parentAssignedID:
+        type: string
+        description: <description required>
+      parentCatalogItemID:
+        type: string
+        description: <description required>
+      parentCatalogItemName:
+        type: string
+        description: <description required>
+      parentCurrentStatus:
+        type: string
+        description: <description required>
+      relationID:
+        type: string
+        description: <description required>
+      containingOfferings:
+        type: array
+        items:
+          $ref: '#/definitions/ContainingOffering'
+        description: The containing offerings of the search result
+      eligibilityReason:
+        type: string
+        description: <description required>
+      eligibilityStatus:
+        type: string
+        description: <description required>
+      expiredIndication:
+        type: boolean
+        description: <description required>
+      catalogItemType:
+        type: string
+        description: <description required>
+      currency:
+        type: string
+        description: Reflects catalog price currency
+      flexAttr:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        
+  SearchCatalogItems:
+    properties:
+      itemsPerCategory:
+        type: integer
+        format: int32
+        description: Number of items to present on each page
+      itemsPerPage:
+        type: integer
+        format: int32
+        description: Maximum number of items on each page
+      startIndex:
+        type: integer
+        format: int32
+        description: Starting index point for this representation
+      totalResults:
+        type: integer
+        format: int32
+        description: Total number of search results
+      results:
+        type: array
+        items: 
+         $ref: '#/definitions/SearchResult'
+        description: Defined offers that meet the eligibility criteria
+    
+  implSearchResults:
+    properties:
+      items:
+        type: object
+        $ref: "#/definitions/SearchCatalogItems"
+        description: <description required>
+      categories:
+        type: array
+        items:
+          $ref: '#/definitions/SearchResultsCategory'
+      flexAttr:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        
+  SearchResultsCategory:
+    properties:
+      categoryName:
+        type: string
+        description: <description required>
+      currentPlanRelationID:
+        type: string
+        description: <description required>
+      itemsPerCategory:
+        type: integer
+        format: int32
+        description: Number of items to present on each page
+      itemsPerPage:
+        type: integer
+        format: int32
+        description: Maximum number of items on each page
+      startIndex:
+        type: integer
+        format: int32
+        description: Starting index point for this representation
+      totalResultsInCategory:
+        type: integer
+        format: int32
+        description: Total number of search results
+      categoryID:
+        type: string
+        description: <description required>
+      results:
+        type: array
+        items: 
+         $ref: '#/definitions/CatalogSearchResult'
+        description: Defined offers that meet the eligibility criteria      
+  
+  CatalogSearchResult:
+    properties:
+      RecurringPrice:
+        type: object
+        $ref: '#/definitions/CommonPrice'
+        description: Recurring Price
+      OneTimePrice:
+        type: object
+        $ref: '#/definitions/CommonPrice'
+        description: Recurring Price
+      lobs:
+        type: array
+        items:
+          type: string
+        description: Line(s) of business which apply
+      catalogItemID:
+        type: string
+        description: Item's ID from the Master Enterprise Catalog
+      catalogItemName:
+        type: string
+        description: Item's name from the Master Enterprise Catalog
+      businessType:
+        type: string
+        description: Will hold the item business type as per one of the valid values
+        enum:
+          - ACCESSORY
+          - BUNDLE_PLAN
+          - DEVICE
+          - F_N_F SERVICE
+          - OFFERING
+          - PLAN
+          - PRICE_PACKAGE
+          - TV_CHANNEL
+          - TV_PACKAGE
+      catalogItemDescription:
+        type: string
+        description: Item's description from the Master Enterprise Catalog
+      catalogItemImage:
+        type: string
+        description: URL of image
+      attachments:
+        type: array
+        items:
+          $ref: '#/definitions/Attachment'
+      parentAssignedID:
+        type: string
+        description: Contains the assigned product ID of a parent service for a PRICE_PACKAGE
+      parentCatalogItemID:
+        type: string
+        description: Contains the catalog ID of a parent service for a PRICE_PACKAGE
+      parentCatalogItemName:
+        type: string
+        description: Contains name of the parent service for a PRICE_PACKAGE
+      parentCurrentStatus:
+        type: string
+        description: Contains status of perent service for a PRICE_PACKAGE.
+      relationID:
+        type: string
+        description: Relation ID
+      containingOfferings:
+        type: array
+        items:
+          $ref: '#/definitions/ContainingOffering'
+      eligibilityReason:
+        type: string
+        description: Description of eligibility status reason.  For eligibility rules, there is an option to define a message with a reason why the ofer is not eligbile, i.e. This Product Offering is for new customers only.
+      eligibilityStatus:
+        type: string
+        description: Wheher eligibility status is Eligible
+      expiredIndication:
+        type: boolean
+        description: Indication of expired item
+      type:
+        type: string
+        description: Distinguishes between PRODUCT_OFFERING and PRODUCT_SPECIFICATION
+      currency:
+        type: string
+        description: Reflects catalog prices, if defined in multiple currencies
+      flexAttr:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: List of additional properties that are assigned to the ProductOffering      
+      
+  CommonPrice:
+    properties:
+      originalAmount:
+        type: number
+        description: The original amount of the price before any discounts
+      discountPercentage:
+        type: number
+        description: Percentage discount to be applied to the original price
+      finalAmount:
+        type: number
+        description: The final amount of the price after any discounts and override/waive
+      finalAmountWithTax:
+        type: number
+        description: Final Amount + Final Tax Amount
+      finalTaxAmount:
+        type: number
+        description: The final tax amount of the price after any discounts
+      originalTaxAmount:
+        type: number
+        description: The original tax amount of the price before any discounts
+      maxAmount:
+        type: number
+        description: Maximum price that can be applied
+      minAmount:
+        type: number
+        description: Minimum price that can be applied
+      description:
+        type: string
+        description: Description of the charge
+      currency:
+        type: string
+        description: Currency for the price representation. Default is USD.
+      
+  
+  implProductOrderItemHeaders:
+    properties:
+      ProductOrderItemHeaders:
+        type: array
+        items:
+          $ref: '#/definitions/OrderItemHeader'
+  
+  OrderItemHeader:
+    properties:
+      productOfferingInstanceID:
+        type: string
+        description: Assigned Product ID 
+      productOfferingName:
+        type: string
+        description: <dr>
+      implCalculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/implCalculatedPrice'
+      referenceNumber:
+        type: string
+        description: <dr>
+      productID:
+        type: string
+        description: <dr>
+      serviceRequiredDate:
+        type: string
+        format: date
+        description: <dr>
+      productServiceID:
+        type: string
+        description: <dr>
+      productName:
+        type: string
+        description: <dr>
+      allowedActions:
+        type: array
+        items:
+          type: string
+        description: Constrained of allowed actions
+        enum:
+          - AMEND
+          - CANCEL
+          - CANCEL_OFFER
+          - CANCEL_PARTIAL
+          - CANCEL_REPLACE_OFFER
+          - CREATE
+          - DISCONTINUE
+          - EDIT
+          - RESUME_NEGOTIATION
+          - TAKEOVER
+          - WITHDRAW_AMEND
+          - WITHDRAW_CANCEL
+      createdBy:
+        type: string
+        description: <dr>
+      ActionType:
+        type: string
+        description: Constrained LoV ()
+      productCatalogID:
+        type: string
+        description: <dr>
+      lineOfBusiness:
+        type: string
+        description: <dr>
+      isPartOfBundle:
+        type: boolean
+        description: <dr>
+      productLevel:
+        type: string
+        description: <dr>
+      ID:
+        type: string
+        description: Order Action ID
+      status:
+        type: string
+        description: Constrained LoV ()
+
+  TopLevelConfiguration:
+    properties:
+      implCalculatedPrices: 
+        type: array
+        items:
+          $ref: '#/definitions/implCalculatedPrice'
+      displayableItems:
+        type: array
+        items:
+          $ref: '#/definitions/ProductDisplay'
+        description: Contains products and Characteristic Values that are defined as related to this Configuration Group
+      compatabilityStatus:
+        type: string
+        description: Constrained compatability status
+        enum:
+          - BLOCKING
+          - COMPATIBLE
+          - NOT_CHECKED
+      productID:
+        type: string
+        description: The ID of the Product
+      temporaryID:
+        type: string
+        description: <dr>
+      serviceID:
+        type: string
+        description: The Service ID of the Product
+      Messages:
+        type: array
+        items:
+          $ref: '#/definitions/RuleExceptionMessage'
+      productSpecification:
+        type: object
+        $ref: '#/definitions/ProductSpecification'
+      effectiveCatalogVersion:
+        type: string
+        description: <dr>
+      lineOfBusiness:
+        type: string
+        description: <dr>
+      productOffering:
+        type: object
+        $ref: '#/definitions/ProductOffering'
+      
+  ProductDisplay:
+    properties:
+      implCalculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/implCalculatedPrice'
+        description: <dr>
+      displayableItems:
+        type: array
+        items:
+          $ref: '#/definitions/ProductDisplay'
+      productID:
+        type: string
+        description: <dr>
+      productSpecContainmentID:
+        type: string
+        description: <dr>
+      displayInformation:
+        type: object
+        $ref: '#/definitions/ProductSpecDisplay'
+      productSpecContainment:      
+        type: object
+        $ref: '#/definitions/ProductSpecContainment'
+      originalCatalogDisplayInformation:
+        type: object
+        $ref: '#/definitions/ProductSpecDisplay'
+      temporaryID:
+        type: string
+        description: <dr>
+      displayablePricePlan:      
+        type: array
+        items:
+          $ref: '#/definitions/AssignedPricePlan'
+        description: <dr>
+      displayableCharacteristics:      
+        type: array
+        items:
+          $ref: '#/definitions/CharacteristicValueDisplay'
+        description: <dr>
+      allowedActions:
+        type: array
+        items:
+          type: string
+        description: Constrained LoV of allowed actions
+        enum:
+          - AMEND
+          - CANCEL
+          - CANCEL_OFFER
+          - CANCEL_PARTIAL
+          - CANCEL_REPLACE_OFFER
+          - CREATE
+          - DISCONTINUE
+          - EDIT
+          - RESUME_NEGOTIATION
+          - TAKEOVER
+          - WITHDRAW_AMEND
+          - WITHDRAW_CANCEL
+      totalDeposit:
+        type: object
+        $ref: '#/definitions/TotalDepositCalculationResult'
+        description: <dr>
+      selected:
+        type: boolean
+        description: <dr>
+      businessType:
+        type: string
+        description: Constrained LoV for valid business types
+        enum:
+          - DEVICE
+          - FRIENDS_AND_FAMILY
+          - TV_CHANNEL
+          - TV_PACKAGE
+      serviceID:
+        type: string
+        description: <dr>
+      name:
+        type: string
+        description: <dr>
+      action:
+        type: string
+        description: Constrained LoV for action
+        enum:
+          - Add
+          - Remove
+          - Reestablish
+          - Resume
+          - Suspend
+          - Change
+      status:
+#        type: object
+#        $ref: '#/definitions/ProductActivationStatus'
+#        description: <dr>
+        type: string
+        description: Constrained LoV for status
+        enum:
+          - ACTIVE
+          - CEASED
+          - SUSPENDED
+
+  RuleExceptionMessage:
+    properties:
+      objectID:
+        type: string
+        description: <dr>
+      productSpecCharacteristicID:
+        type: string
+        description: <dr>
+      messageID:
+        type: string
+        description: <dr>
+      ruleLevel:
+#        type: object
+#        $ref: '#/definitions/ConfigurationRuleLevel'
+        type: string
+        description: Constrained LoV for rule level
+          - A
+          - P
+          - S
+      objectName:
+        type: string
+        description: <dr>
+      parameters:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+      text:
+        type: string
+        description: <dr>
+      
+  ProductSpecification:
+    properties:
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+      attachments:
+        type: array
+        items:
+          $ref: '#/definitions/Attachment'
+        description: <dr>
+      characteristics:
+        type: array
+        items:
+          $ref: '#/definitions/ProductSpecCharacteristic'
+      name:
+        type: string
+        description: <dr>
+      id:
+        type: string
+        description: <dr>
+      type:
+        type: string
+        description: <dr>
+      level:
+        type: string
+        description: <dr>
+      description:
+        type: string
+        description: <dr>
+      code:
+        type: string
+        description: <dr>
+
+  ProductOffering:
+    properties:
+      products:
+        type: array
+        items:
+          $ref: '#/definitions/ProductSpecification'
+        description: <dr>
+      detailsGroups:
+        type: array
+        items:
+          $ref: '#/definitions/CatalogItemCharacteristicGroup'
+        description: <dr>
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: <dr>
+      attachments:
+        type: array
+        items:
+          $ref: '#/definitions/Attachment'
+        description: <dr>
+      calculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/implCalculatedPrice'
+        description: <dr>
+      name: 
+        type: string
+        description: <dr>
+      id:
+        type: string
+        description: <dr>
+      bundle:
+        type: boolean
+        description: <dr>
+      description:
+        type: string
+        description: <dr>
+      code:
+        type: string
+        description: <dr>
+
+  ProductSpecDisplay:
+    properties:
+      enabled:
+        type: boolean
+        description: <dr>
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: <dr>
+      visible:
+        type: boolean
+        description: <dr>
+      mandatory:
+        type: boolean
+        description: <dr>
+      showStructure:      
+        type: boolean
+        description: <dr>
+
+  ProductSpecContainment:
+    properties:
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: <dr> 
+      minimumQuantity:
+        type: integer
+        format: int32
+        description: <dr>
+      containedProduct:
+        type: object
+        $ref: '#/definitions/ProductSpecification'
+        description: <dr>
+      defaultQuantity:
+        type: integer
+        format: int32
+        description: <dr>
+      maximumQuantity:
+        type: integer
+        format: int32
+        description: <dr>
+
+  AssignedPricePlan:
+    properties:
+      calculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/implCalculatedPrice'
+        description: <dr> 
+      displayInformation:
+        type: object
+        $ref: '#/definitions/PriceSchemaDisplay'
+        description: <dr> 
+      allowedActions:
+        type: array
+        items:
+          type: string
+        description: Constrained LoV for allowed actions
+        enum:
+          - AMEND
+          - CANCEL
+          - CANCEL_OFFER
+          - CANCEL_PARTIAL
+          - CANCEL_REPLACE_OFFER
+          - CREATE
+          - DISCONTINUE
+          - EDIT
+          - RESUME_NEGOTIATION
+          - TAKEOVER
+          - WITHDRAW_AMEND
+          - WITHDRAW_CANCEL
+      selected:
+        type: boolean
+        description: <dr>
+      assignedPricePlanID:
+        type: string
+        description: <dr>
+      productSpecPricingID:
+        type: string
+        description: <dr>
+      crossProductDiscount:
+        type: boolean
+        description: <dr>
+      productSpecPricing:
+        type: object
+        $ref: '#/definitions/ProductSpecPricing'
+        description: <dr> 
+      crossProductruleDescription:      
+        type: string
+        description: <dr>
+      name:
+        type: string
+        description: <dr>
+      action:
+        type: object
+        $ref: '#/definitions/ProductConfigurationActionType'
+        description: <dr> 
+      status:
+#        type: object
+#        $ref: '#/definitions/ProductActivationStatus'
+#        description: <dr>
+        type: string
+        description: Constrained LoV for status
+        enum:
+          - ACTIVE
+          - CEASED
+          - SUSPENDED
+
+  CharacteristicValueDisplay:
+    properties:
+      displayInformation:
+        type: object
+        $ref: '#/definitions/CharacteristicDisplay'
+        description: <dr> 
+      originalcatalogDisplayInformation:
+        type: object
+        $ref: '#/definitions/CharacteristicDisplay'
+        description: <dr> 
+      productSpecCharacteristicID:
+        type: string
+        description: <dr> 
+      productSpecCharacteristic:
+        type: object
+        $ref: '#/definitions/ProductSpecCharacteristic'
+        description: <dr> 
+      value:
+        type: string
+        description: <dr>
+      
+  TotalDepositCalculationResult:
+    properties:
+      actualAmount:
+        type: number
+        format: double
+        description: <dr>
+      overrideAmount:
+        type: number
+        format: double
+        description: <dr>
+      originalAmount:
+        type: number
+        format: double
+        description: <dr>
+      currency:
+        type: string
+        description: <dr>
+
+#  ProductBusinessType:
+#    properties:
+#      value:
+#        type: string
+#        description: <dr> Constrained LoV (DEVICE, FRIENDS_AND_FAMILY, TV_CHANNEL, TV_PACKAGE)
+
+  ProductConfigurationActionType:
+    properties:
+      value:
+        type: string
+        description: Constrained LoV for configuration Action type
+        enum:
+          - Add
+          - Remove
+          - Reestablish
+          - Resume
+          - Suspend
+          - Change
+
+#  ProductActivationStatus:
+#    properties:
+#      value:
+#        type: string
+#        description: <dr> Constrained LoV (ACTIVE, CEASED, SUSPENDED)
+
+  PriceSchemaDisplay:
+    properties:
+      enabled:
+        type: boolean
+        description: <dr>
+      visible:
+        type: boolean
+        description: <dr>
+        
+  ProductSpecPricing:
+    properties:
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+      includeByDefault:
+        type: string
+        description: Constrained LoV for included by default
+        enum:
+          - INCLUDED_BY_DEFAULT
+          - MANDATORY
+          - NOT_INCLUDED_BY_DEFAULT
+      childPricingSchema:
+        type: object
+        $ref: '#/definitions/PriceSchema'
+      id:
+        type: string
+        description: A unique identifier
+        
+  PriceSchema:
+    properties:
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: <dr>
+      calculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/implCalculatedPrice'
+        description: <dr> 
+      marketingDescription:
+        type: string
+        description: <dr>
+      name:
+        type: string
+        description: <dr>
+      id:
+        type: string
+        description: <dr>
+      type:
+#        type: object
+#        $ref: '#/definitions/PriceSchemaType'
+        type: string
+        description: Constrained LoV for Price Schema Type 
+        enum:
+          - ADDITIONAL
+          - BASIC
+          - PRIMARY
+          - DISCOUNT
+      level:
+        type: string
+        description: <dr>
+      image:
+        type: string
+        description: <dr>
+      description:
+        type: string
+        description: <dr>
+
+  CharacteristicDisplay:
+    properties:
+      enabled: 
+        type: boolean
+        description: <dr>
+      showHelpText:
+        type: boolean
+        description: <dr>
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+      visible:
+        type: boolean
+        description: <dr>
+      displayFormat:
+        type: string
+        description: <dr> Constrained LoV ()
+      numberOfLines:
+        type: integer
+        format: int32
+        description: <dr>
+      mandatory:
+        type: boolean
+        description: <dr>
+      name: 
+        type: string
+        description: <dr>
+      mask:
+        type: string
+        description: <dr>
+
+  ProductSpecCharacteristic:
+    properties:
+      enabled: 
+        type: boolean
+        description: <dr>
+      showHelpText:
+        type: boolean
+        description: <dr>
+      valueBasicType:
+        type: string
+        description: Constrained LoV for Value Basic Type 
+        enum:
+          - BL
+          - CH
+          - CX
+          - DB
+          - DT
+          - NU
+      valueRestriction:
+        type: string
+        description: Constrained LoV for Value Restriction
+        enum:
+          - DI
+          - GE
+          - RA
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+      visible:
+        type: boolean
+        description: <dr>
+      displayFormat:
+        type: string
+        description: <dr> Constrained LoV ()
+      numberOfLines:
+        type: integer
+        format: int32
+        description: <dr>
+      mandatory:
+        type: boolean
+        description: <dr>
+      name: 
+        type: string
+        description: <dr>
+      defaultValue:
+        type: object
+        $ref: '#/definitions/CharacteristicValue'
+      length:
+        type: integer
+        format: int32
+        description: <dr>
+      id:
+        type: string
+        description: <dr>
+      mask:
+        type: string
+        description: <dr>
+      values:
+        type: array
+        items:
+          $ref: '#/definitions/CharacteristicValue'
+      description:
+        type: string
+        description: <dr>
+      code: 
+        type: string
+        description: <dr>
+      
+  CharacteristicValue:
+    properties: 
+      valueForDisplay:
+        type: string
+        description: <dr>
+      valueTo:
+        type: string
+        description: <dr>
+      valueFrom:
+        type: string
+        description: <dr>
+
+  CatalogItemCharacteristicGroup:
+    properties:
+      characteristics:
+        type: array
+        items:
+          $ref: '#/definitions/CatalogItemCharacteristic'
+        description: <dr>
+      name: 
+        type: string
+        description: <dr>
+        
+  CatalogItemCharacteristic:
+    properties:
+      valueRestriction:
+#        type: object
+#        $ref: '#/defintiions/CharacteristicValueRestrictionType'
+        type: string
+        description: Constrained LoV for Value Restriction
+        enum:
+          - DI
+          - GE
+          - RA
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'      
+        description: <dr>
+      valueType:  
+#        type: object
+#        $ref: '#/defintiions/CharacteristicValueBasicType'
+        type: string
+        description: Constrained LoV for Value Type 
+        enum:
+          - BL
+          - CH
+          - CX
+          - DB
+          - DT
+          - NU
+      name:
+        type: string
+        description: <dr> 
+      values:
+        type: array
+        items:
+          $ref: '#/definitions/CatalogItemCharacteristicValue'
+        description: <dr>
+      
+  CatalogItemCharacteristicValue:
+    properties:
+      valueTo:
+        type: string
+        description: <dr> 
+      value:
+        type: string
+        description: <dr> 
+
+  CatalogItemCharacteristicGroup:
+    properties:
+      characteristics:
+        type: array
+        items:
+          $ref: '#/definitions/CatalogItemCharacteristic'
+        description: <dr>
+  
+  implProductConfigurationRequest:
+    properties:
+      username:
+        type: string
+        description: Encrypted username for proxy user authentication
+      password:
+        type: string
+        description: Encrypted passaord for proxy user authentication
+      invokingUser:
+        type: string
+        description: User name for the actual user that invoked the call (for audit purpose)
+      applicationID:
+        type: string
+        description: Code identifying invoking application
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was invoked
+      activityForConfiguration:
+        type: string
+        description: <dr>
+      settingsView:
+#        type: object
+#        $ref: '#/definitions/SettingsViewFilter'
+        type: string
+        description: Constrained LoV for Settings View
+        enum:
+          - FULL
+          - QUICK_SETTINGS
+      retrieveSchemaPricing:
+        type: boolean
+        description: <dr>
+      productOrderItems:
+        type: array
+        items:
+          $ref: '#/definitions/ChangedProductOrderItem'
+      retrieveComponentPricing:
+        type: boolean
+        description: <dr>
+      confirmationMessagesApproved:
+        type: boolean
+        description: <dr>
+        
+  implProductConfigurationResponse:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      productConfigurations:
+        type: array
+        items:
+          $ref: '#/definitions/ValidateProductConfigurationResponse'
+
+  ChangedProductOrderItem:
+    properties:
+      productOrderItemID:
+        type: string
+        description: <dr>
+      productID:
+        type: string
+        description: <dr>
+      productChanges:
+        type: array
+        items:
+          $ref: '#/definitions/ProductConfigurationChanges'
+          
+  ProductConfigurationChanges:
+    properties:
+      suspendedContainedProducts:
+        type: array
+        items:
+          $ref: '#/definitions/SuspendContainedProduct'
+        description: <dr>
+      changedSimpleProducts:
+        type: array
+        items:
+          $ref: '#/definitions/ChangedSimpleProduct'
+        description: <dr>
+      newAssignedPricePlan:
+        type: array
+        items:
+          $ref: '#/definitions/AddedAssignedPricePlan'
+        description: <dr>
+      newSimpleProducts:
+        type: array
+        items:
+          $ref: '#/definitions/AddedSimpleProduct'
+        description: <dr>
+      resumedContainedProducts:
+        type: array
+        items:
+          $ref: '#/definitions/ResumeContainedProduct'
+        description: <dr>
+      changedContainedProducts:
+        type: array
+        items:
+          $ref: '#/definitions/ChangeContainedProduct'
+        description: <dr>
+      removedSimpleProducts:
+        type: array
+        items:
+          $ref: '#/definitions/RemovedSimpleProduct'
+        description: <dr>
+      removedAssignedPricePlan:
+        type: array
+        items:
+          $ref: '#/definitions/RemovedAssignedPricePlan'
+        description: <dr>
+      removedContainedProducts:
+        type: array
+        items:
+          $ref: '#/definitions/RemovedContainedProduct'
+        description: <dr>
+      newContainedProducts:
+        type: array
+        items:
+          $ref: '#/definitions/AddedContainedProduct'
+        description: <dr>        
+
+  SuspendContainedProduct:
+    properties:
+      productID:
+        type: string
+        description: <dr>
+
+  ChangedSimpleProduct:
+    properties:
+      productID:
+        type: string
+        description: <dr>
+      parentTemporaryID:
+        type: string
+        description: <dr>
+      parentSpecContainmentID:
+        type: string
+        description: <dr>
+      temporaryID:
+        type: string
+        description: <dr>
+      changedCharacteristics:
+        type: array
+        items:
+          $ref: '#/definitions/CharacteristicValueChange'
+        description: <dr>
+      simpleProductSpecID:
+        type: string
+        description: <dr>
+      parentProductSpecContainmentID:
+        type: string
+        description: <dr>
+
+  CharacteristicValueChange:
+    properties:
+      characteristicID:
+        type: string
+        description: <dr>
+      value:
+        type: string
+        description: <dr>
+
+  AddedAssignedPricePlan:
+    properties:
+      parentTemporaryID:
+        type: string
+        description: <dr>
+      productSpecPricingID:
+        type: string
+        description: <dr>
+        description: <dr>
+      parentProductSpecContainmentID:
+        type: string
+        description: <dr>
+      parentProductID:
+        type: string
+        description: <dr>
+
+  AddedSimpleProduct:
+    properties:
+      parentTemporaryID:
+        type: string
+        description: <dr>
+      productSpecContainmentID:
+        type: string
+        description: <dr>
+      temporaryID:
+        type: string
+        description: <dr>
+      changedCharacteristics:
+        type: array
+        items:
+          $ref: '#/definitions/CharacteristicValueChange'
+        description: <dr>
+      businessType:
+#        type: object
+#        $ref: '#/definitions/ProductBusinessType'
+        type: string
+        description: Constrained LoV for Business Type
+        enum:
+          - DEVICE
+          - FRIENDS_AND_FAMILIY
+          - TV_CHANNEL
+          - TV_PACKAGE
+      simpleProductSpecID:
+        type: string
+        description: <dr>
+      parentProductSpecContainmentID:
+        type: string
+        description: <dr>
+      parentProductID:
+        type: string
+        description: <dr>
+        
+  ResumeContainedProduct:
+    properties:
+      productID:
+        type: string
+        description: <dr>
+      changedCharacteristics:
+        type: array
+        items:
+          $ref: '#/definitions/CharacteristicValueChange'
+        description: <dr>
+
+  ChangeContainedProduct:
+    properties:
+      productID:
+        type: string
+        description: <dr>
+      parentTemporaryID:
+        type: string
+        description: <dr>
+      productSpecContainmentID:
+        type: string
+        description: <dr>
+      temporaryID:
+        type: string
+        description: <dr>
+      changedCharacteristics:
+        type: array
+        items:
+          $ref: '#/definitions/CharacteristicValueChange'
+        description: <dr>
+      parentProductSpecContainmentID:
+        type: string
+        description: <dr>
+
+  RemovedSimpleProduct:
+    properties:
+      productID:
+        type: string
+        description: <dr>
+      parentTemporaryID:
+        type: string
+        description: <dr>
+      productSpecContainmentID:
+        type: string
+        description: <dr>
+      simpleProductSpecID:      
+        type: string
+        description: <dr>
+
+  RemovedAssignedPricePlan:
+    properties:
+      parentTemporaryID:
+        type: string
+        description: <dr>
+      assignedPricePlanID:
+        type: string
+        description: <dr>
+      productSpecPricingID:
+        type: string
+        description: <dr>
+        
+  RemovedContainedProduct:
+    properties:
+      productID:
+        type: string
+        description: <dr>
+      parentTemporaryID:
+        type: string
+        description: <dr>
+      productSpecContainmentID:
+        type: string
+        description: <dr>
+
+  AddedContainedProduct:
+    properties:
+      parentTemporaryID:
+        type: string
+        description: <dr>
+      productSpecContainmentID:
+        type: string
+        description: <dr>
+      temporaryID:
+        type: string
+        description: <dr>
+      changedCharacteristics:
+        type: array
+        items:
+          $ref: '#/definitions/CharacteristicValueChange'
+        description: <dr>
+      parentProductSpecContainmentID:
+        type: string
+        description: <dr>
+      productSpecID:
+        type: string
+        description: <dr>
+      parentProductID:
+        type: string
+        description: <dr>
+
+  ValidateProductConfigurationResponse:
+    properties:
+      productOrderID:
+        type: string
+        description: <dr>
+      productOrderItemID:
+        type: string
+        description: <dr>
+      productOrderItemReferenceNumber:
+        type: string
+        description: <dr>
+      productConfiguration:
+        type: array
+        items:
+          $ref: '#/definitions/TopLevelConfiguration'
+      productID:
+        type: string
+        description: <dr>
+      otherProductsCrossProductDiscounts:
+        type: array
+        items:
+          $ref: '#/definitions/ProductDiscountsDisplay'
+        description: <dr>
+
+  ProductDiscountsDisplay:
+    properties:
+      calculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/implCalculatedPrice'
+        description: <dr>
+      productOfferingInstanceID:
+        type: string
+        description: <dr>
+      productOfferingName:
+        type: string
+        description: <dr>
+      simpleProductOfferingName:
+        type: string
+        description: <dr>
+      crossProductDiscounts:
+        type: array
+        items:
+          $ref: '#/definitions/AssignedPricePlanDisplay'
+        description: <dr>
+      productID:
+        type: string
+        description: <dr>
+      productServiceID:
+        type: string
+        description: <dr>
+      
+  AssignedPricePlanDisplay:
+    properties:
+      calculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/implCalculatedPrice'
+        description: <dr>
+      displayInformation:
+        type: object
+        $ref: '#/definitions/PriceSchemaDisplay'
+        description: <dr>
+      allowedActions:
+        type: array
+        items:
+          type: string
+        description: Constrained LoV for allowed actions
+        enum:
+          - AMEND
+          - CANCEL
+          - CANCEL_OFFER
+          - CANCEL_PARTIAL
+          - CANCEL_REPLACE_OFFER
+          - CREATE
+          - DISCONTINUE
+          - EDIT
+          - RESUME_NEGOTIATION
+          - TAKEOVER
+          - WITHDRAW_AMEND
+          - WITHDRAW_CANCEL
+      selected:
+        type: boolean
+        description: <dr>
+      assignedPricePlanID:
+        type: string
+        description: <dr>
+      productSpecPricingID:
+        type: string
+        description: <dr>
+      crossProductDiscount:
+        type: boolean
+        description: <dr>
+      productSpecPricing:
+        type: object
+        $ref: '#/definitions/ProductSpecPricing'
+        description: <dr>
+      crossProductDiscountRuleDescription:
+        type: string
+        description: <dr>
+      name:
+        type: string
+        description: <dr>
+      action:
+        type: string
+        description: <dr> Constrained LoV for action 
+        enum:
+        - AD
+        - ES
+        - RM
+        - RS
+        - SU
+        - UP
+      status:
+        type: string
+        description: <dr> Constrained LoV for status 
+        enum:
+        - AC
+        - CE
+        - SU
+
+#  mecProductConfigOptions:
+#    properties:
+#      productOrderItemID:
+#        type: string
+#        description: The ID of the ProductOrderItem
+#      productOrderItemReferenceNumber:
+#        type: string
+#        description: Reference number of the ProductOrderItem
+#      productConfiguration:
+#        type: object
+#        $ref: '#/definitions/TopLevelConfiguration'
+#      productID:
+#        type: string
+#        description: ID of the product
+#      productOrderItemType:
+#        type: string
+#        description: Action that is taken on the product
+
+  implBrowsingCategoriesStructureOutput:
+    properties:
+      categories:
+        type: array
+        items:
+          $ref: '#/definitions/implBrowsingCategory'
+          
+  implBrowsingCategory:
+    properties:
+      Category:
+        type: object
+        $ref: '#/definitions/BrowsingCategory'
+        description: Category properties
+      childCategories:
+        type: array
+        items:
+          $ref: '#/definitions/BrowsingCategoryStructure'
+        description: Child Category Properties
+      id:
+        type: string
+        description: Category ID
+        
+  BrowsingCategory:
+    properties:
+      filterFacets:
+        type: array
+        items:
+          $ref: '#/definitions/FilterFacet'
+        description: Filter facets list
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+      name:
+        type: string
+        description: Category name
+      type: 
+        type: string
+        enum:
+          - NAVIGATION
+        description: Value will be NAVIGATION as this category is used for navigating the structure
+      id:
+        type: string
+        description: Category ID
+        
+  FilterFacet:
+    properties:
+      name: 
+        type: string
+        description: Free format short textual descrption
+      id:
+        type: string
+        description: A unique identifier for the facet
+      values:
+        type: array
+        items: 
+          $ref: '#/definitions/FilterFacetValue'
+      code:
+        type: string
+        description: A unique identifier for the facet that is human readable
+        
+  FilterFacetValue:
+    properties:
+      valueTo:
+        type: string
+        description: The upper value that a range-type item property can take on.
+      value:
+        type: string
+        description: A value that the item can take on.  In the case of a range value, this represents the lower value of the range.
+      id:
+        type: string
+        description: A unique identifier; provider write only.
+        
+  BrowsingCategoryStructure:
+    properties:
+      category:
+        type: object
+        $ref: '#/definitions/BrowsingCategory'
+        description: Category properties
+      childCategories:
+        type: array
+        items:
+          $ref: '#/definitions/BrowsingCategoryStructure'
+        description: Child Category Properties
+      id:
+        type: string
+        description: Category ID
+        
+  implRetrieveProductInOrderConfigurationRequest:
+    properties:
+      activityForConfiguration:
+        type: string
+        description: The parameter used to filter the Product Catalog rules and the Activity Designer display information.  The activity name can have any value that represents the action performed by the client and does not necessarily have to map to an activity (step) in the ordering process.
+#        required: true
+      serviceRequiredDate:
+        type: number
+        description: Charter must send system date.  Expects date as LONG.
+#        required: true
+      configurationLevel:
+        type: string
+        description: The level of configuration to be returned.  Charter must always send FULL.
+#        required: true
+        enum:
+        - FULL
+        - NOT_SELECTED
+      settingsView:
+        type: string
+        description: Need description
+#        required: true
+        enum:
+        - FULL
+        - QUICK_SETTINGS
+      returnConfigurationData:
+        type: object
+        $ref: '#/definitions/ReturnConfigurationData'
+#        required: false
+        description: Configuration Data
+        
+  ReturnConfigurationData:
+    properties:
+      productConfigurationInd:
+        type: boolean
+        description: Indicates that the entire configuration of the requested product/offer/bundle, the existing and the available options must be returned.  Mandatory - always send TRUE
+      catalogDataInd:
+        type: boolean
+        description: Indicates that the returned information includes the detailed catalog information of the requested product/offer/bundle.  Does not include prices.  Mandatory - always send TRUE.
+      quotedPricesInd:
+        type: boolean
+        description: Indicates that the returned information includes the quoted prices of the requested product/offer/bundle.  Prices do not include tax information.  Mandatory - always send TRUE.
+      summaryInd:
+        type: boolean
+        description: Indicates that the summary information of the requested product/offer/bundle must be returned.  The summary details include information of the catalog data and the instance information.  Summary details do not include pricing details.  Mandatory - always send TRUE.
+  
+  ImplRetrieveProductInOrderConfigurationResponse:
+    properties:
+      productOrderItemID:
+        type: string
+        description: The ID of the ProductOrderItem
+      productOrderItemReferenceNumber:
+        type: string
+        description: Reference number of the ProductOrderItem
+      productConfiguration:
+        type: object
+        $ref: '#/definitions/TopLevelConfiguration'
+      productID:
+        type: string
+        description: ID of the product
+      productOrderItemType:
+        type: string
+        description: Action that is taken on the product  

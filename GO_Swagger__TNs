@@ -1,0 +1,537 @@
+# this is draft #1 of the TN_ADMIN component of the WebAPI specification for Gateway Ordering
+swagger: '2.0'
+info:
+  title: Gateway Ordering API - TelephoneNumber_Admin API
+  description: Gateway Ordering TelephoneNumber_Admin API
+  version: "1.0.0"
+# the domain of the service
+host: gateway.chartercom.com
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+
+  /TelephoneNumber_Admin/AvailableTelephoneNumbers:
+    get:
+      summary: Docref W06 - Get available TNs from TN administrator
+      description: <dr>
+      parameters:
+        - name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: UUID used to identify a transaction (aka business activity event) so that related operations can be traced through the architecture stack
+        - name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Unique identifier for a client application (e.g. "GATWY" for Gateway)
+        - name: addressID
+          in: query
+          description: Unique identfier (SOLO) for the address being queried for TN service
+          type: integer
+          required: true
+        - name: requestCount
+          in: query
+          description: Number of available TNs to return.  Default is 5.
+          type: integer
+          required: true
+        - name: HostedNumberSearch-AreaCode
+          in: query
+          description: A specific area code number queried to limit available TNs from the provider
+          type: string
+          required: false
+        - name: HostedNumberSearch-Exchange
+          in: query
+          description: A specific exchange number queried to limit available TNs from the provider
+          type: string
+          required: false
+        - name: HostedNumberSearch-Line
+          in: query
+          description: A specific line number queried to determine if it is available from the provider
+          type: string
+          required: false
+          
+      tags:
+        - W06
+      responses:
+        200:
+          description: Successful completion; return location serviceability
+          schema:
+            $ref: '#/definitions/GetAvailableTNsResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /TN_Admin/AvailableTelephoneNumbers/{TelephoneNumber}:
+    get:
+      summary: Docref W19 - Verify that the specified TN is available for restart/reconnect
+      description: <dr>
+      parameters:
+        - name: TelephoneNumber
+          in: path
+          description: TelephoneNumber (including area code) being queried for restart eligibility
+          required: true
+          type: string
+        - name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: UUID used to identify a transaction (aka business activity event) so that related operations can be traced through the architecture stack
+        - name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Unique identifier for a client application (e.g. "GATWY" for Gateway)
+        - name: accountID
+          in: query
+          description: <dr>
+          type: integer
+          required: false
+        - name: accountNumber
+          in: query
+          description: <dr>
+          type: string
+          required: false
+        - name: billerID
+          in: query
+          description: <dr>
+          type: integer
+          required: false
+
+      tags:
+        - W19
+      responses:
+        200:
+          description: Successful completion; return location serviceability
+          schema:
+            $ref: '#/definitions/VerifyTNRestartReturn'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+    post:
+      summary: Docref W07 - Release unused TNs back to the TN Adminsitrator's available pool.  Called separately for each unused TN.
+      description: <dr>
+      parameters:
+        - name: TelephoneNumber
+          in: path
+          type: string
+          description: TelephoneNumber (including area code) to be returned to "Available" status
+          required: true
+        - name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: UUID used to identify a transaction (aka business activity event) so that related operations can be traced through the architecture stack
+        - name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Unique identifier for a client application (e.g. "GATWY" for Gateway)
+      tags:
+        - W07
+      responses:
+        200:
+          description: Successful completion; return <function>
+          schema:
+            $ref: '#/definitions/CommonNoErrorReturnHeader'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /TN_Admin/TNPortability/{TN}:
+    get:
+      summary: Docref W5 - Verify port-in eligibility
+      description: <dr>  
+      parameters:
+        - name: TN
+          in: path
+          description: TN (including area code) being queried for restart eligibility
+          required: true
+          type: string
+        - name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: UUID used to identify a transaction (aka business activity event) so that related operations can be traced through the architecture stack
+        - name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Unique identifier for a client application (e.g. "GATWY" for Gateway)
+      tags:
+        - W05
+      responses:
+        200:
+          description: Successful completion; return boolean indicating TN can/cannot be ported/transferred
+          schema:
+            $ref: '#/definitions/TNPortabilityResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /TN_Admin/TNTransferEligibility/{TN}:
+    get:
+      summary: Docref W20 - Verify transfer eligibility
+      description: <dr>  
+      parameters:
+        - name: TN
+          in: path
+          description: TN (including area code) being queried for restart eligibility
+          required: true
+          type: string
+        - name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: UUID used to identify a transaction (aka business activity event) so that related operations can be traced through the architecture stack
+        - name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Unique identifier for a client application (e.g. "GATWY" for Gateway)
+        - name: accountID
+          in: query
+          description: <dr>
+          type: integer
+          required: true
+        - name: accountNumber
+          in: query
+          description: <dr>
+          type: string
+          required: true
+        - name: billerID
+          in: query
+          description: <dr>
+          type: integer
+          required: true
+        - name: rateCenter
+          in: query
+          description: <dr>
+          type: string
+          required: true
+
+      tags:
+        - W20
+      responses:
+        200:
+          description: Successful completion; return boolean indicating TN can/cannot be ported/transferred
+          schema:
+            $ref: '#/definitions/TNTransferEligibilityResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /TN_Admin/TNPortability/{TN}/PIN:
+    get:
+      summary: Docref W25 - Get TPV PIN.  Designed for separate PINs for each TN, while spec is set for one PIN per account.  Setting the PIN at the account level poses several challenges - sending multiple TNs for porting at a single time changes the dynamics of TN porting.
+      description: <dr>  
+      parameters:
+        - name: TN
+          in: path
+          description: TN (including area code) being queried for restart eligibility
+          required: true
+          type: string
+        - name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: UUID used to identify a transaction (aka business activity event) so that related operations can be traced through the architecture stack
+        - name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Unique identifier for a client application (e.g. "GATWY" for Gateway)
+      tags:
+        - W25
+      responses:
+        200:
+          description: Successful completion; return boolean indicating TN can/cannot be ported/transferred
+          schema:
+            $ref: '#/definitions/TPVPINResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /TN_Admin/VerifyTNs:
+    put:
+      summary: Docref W29 - Verify Valid TNs
+      description: <dr>
+      parameters:
+        - name: lineageID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: UUID used to identify a transaction (aka business activity event) so that related operations can be traced through the architecture stack
+        - name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Unique identifier for a client application (e.g. "GATWY" for Gateway)
+        - name: VerifyValidTNsRequest
+          in: body
+          description: Incudes input parameters common to all invocations
+          required: true
+          schema: 
+           $ref: "#/definitions/VerifyValidTNsRequest"
+
+      tags:
+        - W29
+      responses:
+        200:
+          description: Successful completion; return location serviceability
+          schema:
+            $ref: '#/definitions/VerifyValidTNsResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /TN_Admin/InitiateTPVPinRequest:
+    put:
+      summary: Docref W30 - Initiate TPV Pin Request
+      description: <dr>
+      parameters:
+        - name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: UUID used to identify a transaction (aka business activity event) so that related operations can be traced through the architecture stack
+        - name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Unique identifier for a client application (e.g. "GATWY" for Gateway)
+        - name: InitateTPVPinRequest
+          in: body
+          description: Incudes input parameters common to all invocations
+          required: true
+          schema: 
+           $ref: "#/definitions/InitiateTPVPINRequest"
+
+      tags:
+        - W29
+      responses:
+        200:
+          description: Successful completion; return location serviceability
+          schema:
+            $ref: '#/definitions/InitiateTPVPINResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+            
+definitions:
+
+##############################################
+#
+#	Request/Response definitions
+#
+##############################################
+
+  GetAvailableTNsResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+      availableTNs:
+        type: array
+        items:
+          $ref: '#/definitions/telephoneNumber'
+
+  InitiateTPVPINRequest:
+    properties:
+      orderID:
+        type: string
+        description: Order being initiated for TPV
+      carrier:
+        type: string
+        description: Provider from which TN is being ported
+      hostedTN:
+        type: array
+        items:
+          $ref: '#/definitions/telephoneNumber'
+      
+
+  InitiateTPVPINResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+      status:
+        type: string
+        description: Acknowledgement that the request has been initiated
+
+  VerifyTNRestartReturn:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+      accountID:
+        type: integer
+        description: <dr>
+      accountNumber:
+        type: integer
+        description: <dr>
+      billertID:
+        type: integer
+        description: <dr>
+      phoneNumber:
+        type: string
+        description: <dr>
+      restartEligibilityFlag:
+        type: boolean
+        description: Flag indicating TN is/is not available for restart.
+
+  VerifyValidTNsRequest:
+    properties:
+      TNsToValidate:
+        type: array
+        items:
+          $ref: '#/definitions/telephoneNumber'
+        description: List of TNs to validate       
+ 
+  VerifyValidTNsResponse:
+    properties:
+      commonInputHeader:
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: Common parameters submitted with all service calls to support authentication, reporting, logging and troubleshooting.
+      validTNs:
+        type: array
+        items:
+          $ref: '#/definitions/telephoneNumber'
+        description: <dr> 
+        
+  TNPortabilityResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+      portedCarrier:
+        type: string
+        description: <dr>
+      portedAccountNumberRequiredFlag:
+        type: boolean
+        description: <dr>
+      portedAccountPINRequiredFlag:
+        type: boolean
+        description: <dr>
+      LSRValidationStatus:
+        type: string
+        description: <dr>
+
+  TNTransferEligibilityResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+      accountID:
+        type: integer
+        description: <dr>
+      accountNumber:
+        type: integer
+        description: <dr>
+      billertID:
+        type: integer
+        description: <dr>
+      phoneNumber:
+        type: string
+        description: <dr>
+      rateCenter:
+        type: string
+        description: <dr>
+      transferabilityEligibilityFlag:
+        type: boolean
+        description: Flag indicating TN is/is not available for transfer.
+
+##############################################
+#
+#	Common Object definitions
+#
+##############################################
+
+  CommonNoErrorReturnHeader:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+        
+  CommonErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/CommonErrors"
+  
+  CommonErrors:
+    properties:
+      errCode:
+        type: string
+      errMessage:
+        type: string
+      errDescription:
+        type: string
+      errGUID:
+        type: string
+
+##############################################
+#
+#	Function-Specific Object definitions
+#
+##############################################
+
+  telephoneNumber:
+    properties:
+      countryCode:
+        type: string
+        description: Standard international code used to identify the country to which a telephone number belongs (e.g. for +1 888-555-1212, the countryCode value = `=1`
+      areaCode:
+        type: string
+        description: First three digits of a 10-digit telephone number (e.g. 800 in number 800-555-1212).  Determined by large-scale geographic constraint (State/County).
+      exchange:
+        type: string
+        description: First three digits of a 7-digit telephone number (e.g. 555 in number 800-555-1212).  Limited to smaller-scale geographic constraint (City/Sub-City).
+      line:
+        type: string
+        description: Last four digits of a telephone number (e.g. 1212 in number 800-555-1212).  Allocated by the local provider subject to local constraints.
+
+  TPVPINResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+      TPVPIN:
+        type: string
+        description: TPV PIN associated with the number

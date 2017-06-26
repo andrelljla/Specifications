@@ -1,0 +1,1196 @@
+swagger: '2.0'
+
+info:
+  version: "1.0.0"
+  title: InProcessOrder
+  description: <dr>
+produces:
+ - application/json
+
+paths:
+  /inProcessOrders/v1:
+    post:
+      summary: create In-Process Order
+      description: When entering the Gateway Ordering process, we create a new In-Process Order given what we know (person/location, account, etc) from the Gateway buy-flow.  Invoking this procedure creates an instance of the In-Process Order structure with limited information populated.  Remaining sections of this order will be populated as the application or buying process progresses.
+      parameters:
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+        - 
+          name: OrderInitialization
+          description: Basic parameters required to create an (empty) order structure.  Depedning on how this process is being initialized, the call will require (a) an accountID [existing customer]; (b) an addressID and a PartyID [existing party at new location]; or (c) an addressID and the Party name attributes [full new connect].
+          in: body
+          required: true
+          schema: 
+            $ref: "#/definitions/OrderInitialization"
+
+      tags:
+        - IPO_FullStructure
+
+      responses:
+        200:
+          description: inProcessOrder successfully created; return inProcessOrderID
+          schema:
+            $ref: '#/definitions/inProcessOrderCreation'
+
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+    
+  /inProcessOrders/v1/{inProcessOrderID}:
+    get:
+      description: Searches for `inProcessOrder` characteristics for the `order` whose ID is specified in the URI.
+      parameters:
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+        -
+          name: inProcessOrderID
+          in: path
+          description: Unique identifier for an `inProcessOrder`
+          required: true
+          type: integer
+
+      tags:
+        - IPO_FullStructure
+
+      responses:
+        200:
+          description: Details about the `Order`
+          schema:
+            $ref: "#/definitions/inProcessOrderStructure"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+
+#  /inProcessOrders/v1/{inProcessOrderID}/opcOrderHeader:
+#    put:
+#      summary: Add the Order Header (metadata) Information
+#      description: The order header information describes some general information that applies to all items in the order (e.g. Reason, Sales Agent, Service Requested Date, etc.).
+#      parameters:
+#        - 
+#          name: X-Charter-Transaction-ID
+#          in: header
+#          required: true
+#          type: string
+#          description: Unique transaction identifier; used for transactional error handling
+#        - 
+#          name: X-Charter-Application-ID
+#          in: header
+#          required: true
+#          type: string
+#          description: Code identifying invoking application or sales channel
+#        -
+#          name: inProcessOrderID
+#          in: path
+#          description: Unique identifier for an `inProcessOrder`
+#          required: true
+#          type: integer
+#        - 
+#          name: OrderHeader
+#          in: body
+#          schema:
+#            $ref: '#/definitions/opcOrderHeader' 
+#          description: Line items (in offer/product/component form) to be added to the in-Process Order
+#
+#      tags:
+#        - IPO_Header
+#
+#      responses:
+#        200:
+#          description: Items successfully added; return number of lines added
+#          schema:
+#            $ref: '#/definitions/ipoStatusResponse' 
+
+  /inProcessOrders/v1/{inProcessOrderID}/validatedOrder:
+    put:
+      summary: Add the Order Items and attributes to the specified order
+      description: The Order Items set contains all the offer/product/component services to be included with the order.  This is populated from the ImplProductConfigurationRepsonse (return from OE Order Validation) and translated from OE-specific structure into the itsm and attributes portions of the standard Charter-specific OPC Order Structure contained herein.  Orchestrate with an update of the order status to VALIDATED.
+      parameters:
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+        -
+          name: inProcessOrderID
+          in: path
+          description: Unique identifier for an `inProcessOrder`
+          required: true
+          type: integer
+        - 
+          name: orderItems
+          in: body
+          schema: 
+            $ref: '#/definitions/opcOrderItems' 
+          description: Line items (in offer/product/component form) to be added to the in-Process Order.  Supports simultaneous addition of attributes.
+
+      tags:
+        - validtedOffer
+
+      responses:
+        200:
+          description: Items successfully added; return order status
+          schema:
+            $ref: '#/definitions/ipoStatusResponse'
+
+  /inProcessOrders/v1/{inProcessOrderID}/submittedOrder:
+    put:
+      summary: Update IPO with transaction-specific data from BIL
+      description: On return from BIL, we will have references for the Biller Order, SOLO Product and Work Orders and the SOLO MEC Order, in addition to any new entries in other reference tables resulting from the proces (PARTY, ACCOUNT, etc). Orchestrate with an update of the order status to SUBMITTED.
+      parameters:
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+        -
+          name: inProcessOrderID
+          in: path
+          description: Unique identifier for an `inProcessOrder`
+          required: true
+          type: integer
+        - 
+          name: bilReference
+          in: body
+          schema: 
+            $ref: '#/definitions/bilReference' 
+          description: Line items (in offer/product/component form) to be added to the in-Process Order.  Supports simultaneous addition of attributes.
+
+      tags:
+        - submittedOffer
+
+      responses:
+        200:
+          description: Items successfully added; return order status
+          schema:
+            $ref: '#/definitions/ipoStatusResponse'
+
+#  /inProcessOrders/v1/{inProcessOrderID}/opcOrderItems/{itemNumber}/attributes:
+#    post:
+#      summary: Assign an attribute or set of attributes for the specified order item
+#      description: <dr>
+#      parameters:
+#        - 
+#         name: X-Charter-Transaction-ID
+#          in: header
+#          required: true
+#          type: string
+#          description: Unique transaction identifier; used for transactional error handling
+#        - 
+#         name: X-Charter-Application-ID
+#          in: header
+#          required: true
+#          type: string
+#          description: Code identifying invoking application or sales channel
+#        -
+#          name: inProcessOrderID
+#          in: path
+#          description: Unique identifier for an `inProcessOrder`
+#          required: true
+#          type: integer
+#        -
+#          name: itemNumber
+#          in: path
+#          description: Unique identifier, when combined with OrderID for a specifiec item in an `inProcessOrder`
+#          required: true
+#          type: integer
+#        - 
+#          name: Attributes
+#          in: body
+#          schema:
+#            $ref: '#/definitions/Placeholder' 
+#          description: Attribute value details
+#
+#      tags:
+#        - IPO_Attributes
+#
+#      responses:
+#        200:
+#          description: Items successfully added; return number of attributes created/assigned
+#          schema:
+#            $ref: '#/definitions/Placeholder' 
+
+#  /inProcessOrders/v1/{inProcessOrderID}/opcOrderItems/{itemNumber}/attributes/{attributeID}:
+#    put:
+#      summary: Update an attribute value for the specified order item line
+#      description: <dr>
+#      parameters:
+#        - 
+#          name: X-Charter-Transaction-ID
+#          in: header
+#          required: true
+#          type: string
+#          description: Unique transaction identifier; used for transactional error handling
+#        - 
+#          name: X-Charter-Application-ID
+#          in: header
+#          required: true
+#          type: string
+#          description: Code identifying invoking application or sales channel
+#        -
+#          name: inProcessOrderID
+#          in: path
+#          description: Unique identifier for an `inProcessOrder`
+#          required: true
+#          type: integer
+#        -
+#          name: itemNumber
+#          in: path
+#          description: Unique identifier, when combined with OrderID for a specifiec item in an `inProcessOrder`
+#          required: true
+#          type: integer
+#        -
+#          name: attributeID
+#          in: path
+#          description: Unique identifier, when combined with OrderID and itemNumber for a specifiec attribute of an item in an `inProcessOrder`
+#          required: true
+#          type: integer
+#        - 
+#          name: Attribute
+#          in: body
+#          schema:
+#            $ref: '#/definitions/Placeholder' 
+#            $ref: '#/definitions/Attribute' 
+#          description: Attribute value details
+#
+#      tags:
+#        - IPO_Attributes
+#
+#      responses:
+#        200:
+#          description: Items successfully added; return updated attribute
+#          schema:
+#            $ref: '#/definitions/ipoStatusResponse' 
+#            $ref: '#/definitions/orderItemsResponse'
+
+  /inProcessOrders/v1/{inProcessOrderID}/thirdPartyVerification:
+    put:
+      summary: Add 'V&V' information to the specified order
+      description: Certain items in an order will have additional Verification and Validation ('V&V') criteria associated with them (e.g. TPV for ported TNs).  While generated because of specific items, 'V&V' will be maintained at the order (header) level; a single set of 'V&V' data will cover the entire order.
+      parameters:
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+        -
+          name: inProcessOrderID
+          in: path
+          description: Unique identifier for an `inProcessOrder`
+          required: true
+          type: integer
+
+        - 
+          name: OrderValidationVerification
+          in: body
+          schema:
+            $ref: '#/definitions/orderVerification' 
+          description: Line items (in offer/product/component form) to be added to the in-Process Order.  Supports simultaneous addition of attributes.
+
+      tags:
+        - tpvVerification
+
+      responses:
+        200:
+          description: Items successfully added; return status
+          schema:
+            $ref: '#/definitions/ipoStatusResponse' 
+
+  /inProcessOrders/v1/{inProcessOrderID}/scheduledOrder:
+    put:
+      summary: Update IPO with schedule information
+      description: <dr>
+      parameters:
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+        -
+          name: inProcessOrderID
+          in: path
+          description: Unique identifier for an `inProcessOrder`
+          required: true
+          type: integer
+        - 
+          name: orderSchedule
+          in: body
+          schema:
+            $ref: '#/definitions/orderSchedule' 
+          description: <dr>
+
+      tags:
+        - scheduledOrder
+
+      responses:
+        200:
+          description: Items successfully added; return status
+          schema:
+            $ref: '#/definitions/ipoStatusResponse' 
+
+  /inProcessOrders/v1/{inProcessOrderID}/customerPrePay:
+    put:
+      summary: Update IPO with schedule information
+      description: <dr>
+      parameters:
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+        -
+          name: inProcessOrderID
+          in: path
+          description: Unique identifier for an `inProcessOrder`
+          required: true
+          type: integer
+        - 
+          name: customerPII
+          in: body
+          schema:
+            $ref: '#/definitions/PII' 
+          description: <dr>
+
+      tags:
+        - customerPrePay
+
+      responses:
+        200:
+          description: Pre-pay determination successfully complete; return details
+          schema:
+            $ref: '#/definitions/ipoStatusResponse' 
+  
+
+definitions:
+
+  SuccessReturn:
+    properties:
+      X-Charter-Transaction-ID:
+        type: string
+        description: Return the transaction ID submitted for lineage tracking
+      timestamp:
+        type: string
+        format: datetime
+        description: date/time that the service returned
+  
+  ipoStatusResponse:
+    properties:
+      SuccessReturn:
+        type: object
+        $ref: '#/definitions/SuccessReturn'
+      ipoStatus:
+        type: string
+        description: Status of the in-process-order following the successful completion of the operation
+        enum:
+        - CREATED
+        - VALIDATED
+        - SUBMITTED
+        - SCHEDULED
+        - CREDITCHECK
+        - CONFIRMED
+        
+  inProcessOrder:
+    properties:
+      inProcessOrderID:
+        type: integer
+        description: Unique identifier (TIBCO  BW) for the in-Process Order structure
+      account:
+        type: object
+        $ref: '#/definitions/Account'
+        description: <dr>
+      party:
+        type: object
+        $ref: '#/definitions/Party'
+        description: <dr>
+      serviceAddress:
+        type: object
+        $ref: '#/definitions/USPostalAddress'
+        description: <dr>
+      billingAddress:
+        type: object
+        $ref: '#/definitions/USPostalAddress'
+        description: <dr>
+      opcOrderHeader:
+        type: object
+        $ref: '#/definitions/opcOrderHeader'
+        description: Details that apply to the entirety of the order.  Analogous to 'order header' in a typical procurement system.
+      opcOrderItems:
+        type: object
+        $ref: "#/definitions/opcOrderItems"
+        description: Specific line items in the order.  Ties to Offer/Product/Component structure as defined in Master Enterprise Catalog (MEC).
+      opcItemVerification:
+        type: object
+        $ref: '#/definitions/orderVerification'
+        description: Certain items in the order will require supplemental verification and validation (e.g. TPV for telephone number transfers).  A single verification will cover all items (of a specific type) in an order.
+      scheduledWorkOrder:
+        type: object
+#          $ref: '#/definitions/scheduledWorkOrder'
+        $ref: '#/definitions/WorkOrders'
+        description: Array of work orders resulting from the submitted order
+      transferToAddress:
+        type: object
+        $ref: '#/definitions/USPostalAddress'
+        description: Address field, required for transfer-type orders only.  Represents the address to which service will be transferred as a result of order completion.
+
+  opcOrderHeader:
+    properties:
+      salesAgentID:
+        type: string
+        description: Unique identfier for the individual responsible for selling the order (for commission purposes).  Also drives user (business) role information which can drive offer eligibility.
+      mecOEOrderID:
+        type: string
+        description: Unique ID of the order as configured in MEC.  Only valid for the current session.
+      billerOrderID:
+        type: integer
+        description: Unique ID of the order as creted in the Billing System
+      billerSystemDesignation:
+        type: string
+        description: Code identifying the billing system in which the order is created
+      reasonCd:
+        type: string
+        description: Code assigned as the basis for the order as configured
+      serviceRequestedDate:
+        type: string
+        format: date
+        description: Date on which the customer requests the order to be complete and the newly configured service(s) to be active.
+      transferRecordID:
+        type: integer
+        description: <dr>
+      
+  opcOrderItems:
+    properties:
+      opcOrderItems:
+        type: array
+        items:
+          $ref: '#/definitions/opcOrderItem'
+      
+  opcOrderItem:
+    properties:
+      lineItemNumber:
+        type: integer
+        description: Incremental value which, when combined with the order ID, uniquely identifies the item on the order
+      catalogVersion:
+        type: string
+        description: The version of the Master Enterprise Catalog against which this order is placed
+      catalogOfferID:
+        type: string
+        description: ID of the offer containing the line item as defined in the Master Enterprise Catalog
+      catalogProductID:
+        type: string
+        description: ID of the product containing the line item as defined in the Master Enterprise Catalog
+      catalogComponentID:
+        type: string
+        description: ID of the component containing the line item as defined in the Master Enterprise Catalog
+      catalogRelationID:
+        type: string
+        description: ID of the relation containing the line item as defined in the Master Enterprise Catalog (certain items can be defined around the specific order/product/component relationship rather than the component itself)
+      itemActionCode::
+        type: string
+        description: Code defining the action to be performed on this component as a result of the order
+      opcItemAttributes:
+        type: array
+        items:
+          $ref: '#/definitions/opcItemAttribute'
+
+  inProcessOrderStructure:
+    description: Standard HATEOAS wrapper for a collection, including the array of `inProcessOrderComponents` and an array of links definining possible operations on the collection
+    properties:
+      content:
+        type: object
+#        items:
+        $ref: "#/definitions/inProcessOrder"
+      links:
+        type: array
+        items:
+          $ref: "#/definitions/Link"
+  
+  Link:
+    description: A link to a related resource
+    properties:
+      rel:
+        type: string
+      href:
+        type: string
+  
+  opcItemAttribute:
+    properties:
+      ID:
+        type: integer
+        description: Unique identifier (TIBCO BW) for the item attribute
+      name:
+        type: string
+        description: Short, textual description of a `Serviceability` characteristic
+      value:
+        type: string
+        description: Value of a `Serviceability` characteristic
+      ActionCode::
+        type: string
+        description: Code defining the action to be performed on this sttribute as a result of the order
+
+  Error:
+    description: An error condition
+    properties:
+      userMessage:
+        type: string
+        description: A user-friendly message describing the error and (ideally) what to do about it
+      devopsMessage:
+        type: string
+        description: A detailed message containing information of use to developers or operations people
+        
+  USPostalAddress:
+    description: common structure for address-based location
+    properties:
+      ID:
+        type: integer
+        description: Unique identifier of the address (sourced from SOLO)
+      streetLine1:
+        type: string
+      streetLine2:
+        type: string
+      city:
+        type: string
+      territory:
+        type: string
+      postalCode:
+        type: string
+
+  Party:
+    properties:
+      id:
+        type: integer
+        description: unique identifier for the party responsible for an account
+      businessName:
+        type: string
+        description: <dr>
+      namePrefix:
+        type: string
+        description: <dr>
+      firstName:
+        type: string
+        description: <dr>
+      lastName:
+        type: string
+        description: <dr>
+      middleInitial:
+        type: string
+        description: <dr>
+      nameSuffix:
+        type: string
+        description: <dr>
+      Addresses:
+        type: array
+        items: 
+          $ref: '#/definitions/PartyAddress'
+      telephoneNumbers:
+        type: array
+        items:
+          $ref: '#/definitions/PartyTelephoneNumber'
+      eMail:
+        type: array
+        items:
+          $ref: '#/definitions/eMail'
+      personalIdentifyingInfo:
+        type: object
+        $ref: '#/definitions/PII'
+      prePayRequirement:
+        type: object
+        $ref: '#/definitions/customerVerification'
+        
+  Account:
+    description: An order will either be tied to an existing account or will have sufficient information collected to create an account.  An account is defined as a combination of a Service Address and a Responsbile Party and an effective date; active accounts will not have an end date in the past.
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `Account`
+      party:
+        type: object
+        $ref: '#/definitions/Party'
+        description: The party responsible for an account
+#      serviceAddress:
+#        type: object
+#        $ref: '#/definitions/USPostalAddress'
+#        description: The service address ties to this account
+      number:
+        type: string
+        description: Traditionally, another unique identifier for an `Account`, although this will no longer be guaranteed as new billing systems are introduced. This number is published on customer correspondence
+      type:
+        type: string
+      status:
+        type: string
+        enum:
+        - Active
+        - Inactive
+        - Never
+        - Pending
+        - Delinquent #JLA add 20150828
+        - Suspended #JLA add 20150828
+      billingAddress:
+        $ref: "#/definitions/USPostalAddress"
+      serviceAddress:
+        $ref: "#/definitions/USPostalAddress"
+      sourceStreetAddress:
+        $ref: "#/definitions/USPostalAddress"
+      primaryPhone:
+        $ref: "#/definitions/TelephoneNumber"
+      alternatePhone:
+        $ref: "#/definitions/TelephoneNumber"
+      emailAddress:
+        $ref: "#/definitions/EmailAddress"
+      securityCode:
+        type: string
+      creditClass:
+        type: string
+      bulkFlag:
+        type: boolean
+      classification:
+        type: string
+      connectDate:
+        type: string
+        format: date
+      authorizedUsers:
+        type: array
+        items:
+          type: string
+      associatedAccounts:
+        type: array
+        items:
+          $ref: "#/definitions/AccountIdentity"
+      securityChallenge:
+        $ref: "#/definitions/Challenge"
+      individual:
+        $ref: "#/definitions/Individual"
+      location:
+        $ref: "#/definitions/Location"
+      billing:
+        $ref: "#/definitions/Billing"
+      links:
+        type: array
+        items:
+          $ref: "#/definitions/Link"        
+
+  PartyAddress:
+    properties:
+      addressType: 
+        type: string
+        description: Type of address (e.g. 'Home', 'work') as identified by the responsible party
+      addressDetail:
+        type: object
+        $ref: '#/definitions/USPostalAddress'
+        
+  PartyTelephoneNumber:
+    properties:
+      TelephoneNumberType: 
+        type: string
+        description: Type of address (e.g. 'Home', 'work') as identified by the responsible party
+      TelephoneNumber:
+        type: object
+        $ref: '#/definitions/TelephoneNumber'
+        
+  TelephoneNumber:
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for a `TelephoneNumber`, potentially allowing for independent updates
+      countryCode:
+        type: string
+        description: Always '+1' in US; often omitted
+      areaCode: 
+        type: string
+        description: Telephone Number area code. NPA component of TN
+      exchange:
+        type: string
+        description: Telephone Exchange; first 3 digits of 7-digit TN. NXX component of TN
+      lineNumber:
+        type: string
+        description: last 4 digits of TN
+  
+  eMail:
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for the eMail address
+      eMailType:
+        type: string
+        description: Type of eMail (e.g. 'Home', 'Work') as identified by the responsible party      
+      eMailAddress:
+        type: string
+        description: eMail address value
+        
+  PII:
+    properties:
+      federalTaxID:
+        type: string
+        description: Tax identifier.  For individuals, this will be the Social Security Number (SSN); for businesses this will be the Federal Employer Indentification Number (if available) or the SSN of the individual if not.
+      dateOfBirth:
+        type: string
+        format: date
+        description: Date of birth of the individual
+      businessFormationDate:
+        type: string
+        format: date
+        description: Date of the Federal EIN was generated or date of incorporation for business
+      driverLicenseNumber:
+        type: string
+        description: Individual driver's license number
+      otherStateID:
+        type: string
+        description: Other state-issued method of identification
+      otherStateIDType:
+        type: string
+        description: Description of other state-issued method of identification (e.g. State Resident ID, Voter Registration, CCW, etc).
+      StateofIssue:
+        type: string
+        description: State which issued the individual's driver license.  Required if driverLicenseNumber or otherStateID is provided
+
+  orderVerification:
+    description: Order Verification structure needs to be built-out
+    properties:
+      id:
+        type: string
+        description: Unique idnetifier for the order verification
+        
+  AccountIdentity:
+    description: Only those attributes of an `Account` that identify it from a system or CSR standpoint
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `Account`
+      number:
+        type: string
+        description: Traditionally, another unique identifier for an `Account`, although this will no longer be guaranteed as new billing systems are introduced. This number is published on customer correspondence
+  
+#  Address:
+#    properties:
+#      id:
+#        type: integer
+#        description: Unique identifier for an `Address`, potentially allowing for independent updates
+#      line1:
+#        type: string
+#      line2:
+#        type: string
+#      city:
+#        type: string
+#      territoryCode:
+#        type: string
+#      postalCode:
+#        type: string
+  
+#  TelephoneNumber:
+#    properties:
+#      id:
+#        type: integer
+#        description: Unique identifier for a `TelephoneNumber`, potentially allowing for independent updates
+#      number:
+#        type: string
+  
+  EmailAddress:
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `EmailAddress`, potentially allowing for independent updates
+      text:
+        type: string
+  
+  Challenge:
+    properties:
+      question:
+        type: string
+      answer:
+        type: string
+  
+  Individual:
+    description: A person accountable for purchases of `Services`
+    properties:
+      id:
+        type: integer
+      givenName:
+        type: string
+      familyName:
+        type: string
+      ssn:
+        type: string
+  
+  Location:
+    description: A physical location to which `Services` are delivered
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      routingArea:
+        type: string
+      sysprin:
+        type: string
+      agentId:
+        type: string
+      rateCenter:
+        type: string
+      node:
+        type: string
+      level1:
+        type: string
+      level2:
+        type: string
+      headend:
+        type: string
+      type:
+        type: string
+      comments:
+        type: string
+  
+  Billing:
+    properties:
+      status:
+        type: string
+        enum:
+          - Current
+          - Delinquent
+          - Late
+      cycleDay:
+        type: integer
+        description: Day of the month on which new `Statements` are issued
+      amountDue:
+        type: number
+      pendingPayment:
+        type: number
+      promiseToPayBy:
+        type: string
+        format: date
+      payPerViewLimit:
+        type: number
+      paperlessFlag:
+        type: boolean
+      autoPayStatus:
+        type: string
+      lastPayment:
+        $ref: "#/definitions/Payment"
+      lateFee:
+        $ref: "#/definitions/Charge"
+      delinquency:
+        $ref: "#/definitions/Delinquency"
+      disconnect:
+        $ref: "#/definitions/Disconnect"
+  
+  Payment:
+    properties:
+      amount:
+        type: number
+      postedOn:
+        type: string
+        format: date
+  
+  Charge:
+    properties:
+      amount:
+        type: number
+      paymentDue:
+        type: string
+        format: date
+  
+  Delinquency:
+    properties:
+      amount:
+        type: number
+      daysPastDue:
+        type: integer
+      history:
+        type: array
+        items:
+          $ref: "#/definitions/DelinquencyHistoryItem"
+  
+  DelinquencyHistoryItem:
+    properties:
+      periodsAgo:
+        type: string
+      status:
+        type: string
+        enum:
+          - 30 Days Delinquent
+          - 60 Days Delinquent
+          - 90 Days Delinquent
+          - 120 Days Delinquent
+          - 150 Days Delinquent
+          - 180 Days Delinquent
+          - 210 Days Delinquent
+          - 240 Days Delinquent
+          - 270 Days Delinquent
+          - Account Inactive
+          - Invalid value
+  
+  Disconnect:
+    properties:
+      soft:
+        type: string
+      hard:
+        type: string
+  
+#  AccountCollection:
+#    description: Standard HATEOAS wrapper for a collection, including the array of `Accounts` and an array of links definining possible operations on the collection
+#    properties:
+#      content:
+#        type: array
+#        items:
+#          $ref: "#/definitions/Account"
+#      links:
+#        type: array
+#        items:
+#          $ref: "#/definitions/Link"
+  OrderInitialization:
+    properties:
+      accountID:
+        type: integer
+        description: Account for which order is being created.  Will not be populated for new-connect orders.
+      addressID:
+        type: integer
+        description: Existing addressID (SOLO) for which a new account will be generated and an order placed.
+      partyID:
+        type: integer
+        description: Existing partyID (SOLO) for which a new account will be generated and an order placed.
+      individualNamePrefix:
+        type: string
+        description: Prefix to the name (e.g. Mr, Mrs, Dr, etc)
+      individualFirstName:
+        type: string
+        description: First name of an individual for which a new Party record will be created, a new account will be generated and an order placed.
+      middleInitial:
+        type: string
+        description: Individual's middle initial
+      individualLastName:
+        type: string
+        description: Last name of an individual for which a new Party record will be created, a new account will be generated and an order placed.
+      individualNameSuffix:
+        type: string
+        description: Suffix to the individual's name, usually indicating professional certification  (e.g. DVM, DDS, PMP) or generational characteristics (e.g. Jr, III, IV).
+      partyBusinessName:
+        type: string
+        description: Name of the business, if service is not being provided for and individual
+      contactTelephoneNumber:
+        type: string
+        description: Contact/callback telephone number for the individual regarding the order
+      contactEMail:
+        type: string
+        description: Contact/callback eMail address for the individual regarding the order
+        
+#  CommonNoErrorReturnHeader:
+#    properties:
+#      X-Charter-Transaction-ID:
+#      lineageID:
+#        type: string
+#        description: Unique transaction identifier; used for transactional error handling.  Mapped from X-Charter-Transaction-ID.
+
+  CommonErrorReturn:
+    properties:
+      X-Charter-Transaction-ID:
+#      lineageID:
+        type: string
+        description: Unique transaction identifier; used for transactional error handling  Mapped from X-Charter-Transaction-ID.
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/CommonErrors"
+
+  CommonErrors:
+    properties:
+      errorCode:
+        type: string
+      errorMessage:
+        type: string
+      description:
+        type: string
+      errorUUID: 
+        type: string
+        
+  inProcessOrderCreation:
+    properties:
+      commonNoErrorReturnHeader:
+        type: object
+        $ref: '#/definitions/SuccessReturn'
+      inProcessOrderID:
+        type: integer
+        description: Unique identifier for the in-Proces order
+        
+  WorkOrders:
+    properties:
+      WorkOrders:
+        type: array
+        items:
+          $ref: '#/definitions/WorkOrder'
+          
+  WorkOrder:
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for a `Work Order`
+      jobId:
+        type: string
+        description: Unique identifier for the actual job scheduled and performed as a result of a `Work Order`
+      scheduledDate:
+        type: string
+        format: date
+        description: Date that the ordered work is to be performed
+      scheduledTimeRange:
+        type: string
+        description: Window of time that the ordered work could be performed
+      status:
+        type: string
+        enum:
+          - Open
+          - Cancelled
+          - Completed
+      description:
+        type: string
+      estimatedDuration:
+        type: string
+        description: Text of the form '1 hr 30 min'
+      technicianId:
+        type: string
+        description: Identifier of the person performing the job
+      orderTimestamp:
+        type: string
+        format: date-time
+        description: When the order was taken
+      class:
+        type: string
+        enum:
+          - Service Request
+          - Special Request
+          - Trouble Call
+      specialInstructionsTech:
+        type: string
+        description: <dr>
+      specialInstructionsDispatch:
+        type: string
+        description: <dr>
+      woCallFirstTN:
+        type: string
+        description: <dr>
+      serviceWindowID:
+        type: string
+        description: ID of the schedule window assigned in the schedule and quota management system for this work order
+
+  customerVerification:
+    properties:
+      experianPIN:
+        type: string
+        description: <dr>
+      BadAccountInformation:
+        type: array
+        items:
+          $ref: '#/definitions/DerogatoryCreditInformation'
+      FTAPrepaymentRequiredFlag:
+        type: boolean
+        description: <dr>
+      creditHistoryRankingAssessment:
+        type: string
+        description: <dr>
+      
+  DerogatoryCreditInformation:    
+    properties:
+      accountNumber:
+        type: string
+        description: <dr>
+      outstandingBalance:
+        type: number
+        format: double
+        description: <dr>
+      nonPayDisconnectStatus:
+        type: string
+        description: <dr>
+      unreturnedEquipmentFlag:
+        type: boolean
+        description: <dr>
+      prepayRequired:
+        type: boolean
+        description: <dr>
+      prepayAmountBadDebt:
+        type: number
+        format: double
+      prepayAmountUnreturnedEquipment:
+        type: number
+        format: double
+
+  bilReference:
+    properties:
+      soloAccountID:
+        type: integer
+        description: Unique identifer for the account in the Biller Isolation layer
+      soloPartyID:
+        type: integer
+        description: Unique identifer for the responsible party in the Biller Isolation layer
+      soloAddressID:  
+        type: integer
+        description: Unique identifer for the service address tied to the account in the Biller Isolation layer
+      soloProductOrderID:
+        type: integer
+        description: Unique identifer for the product order tied to the account in the Biller Isolation layer
+      soloWorkOrderID:
+        type: integer
+        description: Unique identifer for the work order (job) tied to the account in the Biller Isolation layer
+      mecOrderID:
+        type: integer
+        description: Unique identifer for the OPC (MEC) order in the Biller Isolation layer
+      billerAccountNum:
+        type: string
+        description: Unique identifer for the account in the Biller
+      billerProductOrderNum:
+        type: string
+        description: Unique identifer for the product order tied to the account in the Biller 
+      billerWorkOrderNum:
+        type: string
+        description: Unique identifer for the work order (job) tied to the account in the Biller

@@ -1,0 +1,65 @@
+swagger: '2.0'
+
+info:
+  version: "1.0.0"
+  title: Service resource
+  description: A `Service` is something a customer is purchasing from Charter that is delivered to one or more `Devices`. `Services` are categorized under video, high-speed internet (HSI) or telephone lines of business.
+produces:
+- application/json
+
+paths:
+  /accounts/v1/{id}/services:
+    get:
+      description: |
+        Searches for `Services` currently subscribed to by the `Account` whose ID is specified in the URI.
+      parameters:
+        -
+          name: id
+          in: path
+          description: Unique identifier for an `Account`
+          required: true
+          type: integer
+      responses:
+        200:
+          description: An array of `Services` for the `Account`
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Service"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+definitions:
+  Service:
+    properties:
+      lineOfBusinessName:
+        type: string
+        enum:
+          - Video
+          - HSI
+          - Telephone
+      totalChargeAmount:
+        type: number
+        description: Total amount (in US Dollars) that the `Account` is currently charged for all `Service` items for this line of business per billing period
+      items:
+        type: array
+        items:
+          $ref: "#/definitions/ServiceItem"
+  ServiceItem:
+    properties:
+      productDescription:
+        type: string
+        description: Short, textual description of the `Service` item
+      chargeAmount:
+        type: number
+        description: Amount (in US Dollars) that the `Account` is currently charged for the `Service` item per billing period
+  Error:
+    description: An error condition
+    properties:
+      userMessage:
+        type: string
+        description: A user-friendly message describing the error and (ideally) what to do about it
+      devopsMessage:
+        type: string
+        description: A detailed message containing information of use to developers or operations people

@@ -1,0 +1,183 @@
+# this is draft #1 of the comprehensive WebAPI specification for interfacing with the AMDOCS Order Engine
+swagger: '2.0'
+info:
+  title: Gateway Ordering API - AMDOCS Interface (CreateOrder)
+  description: This specification defines the interface between WebAPI and the AMDOCS Ordering Engine.
+  version: "1.0.0"
+# the domain of the service
+host: gateway.chartercom.com
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+
+  /commerce/customer/{customer-id}/product-order/create-order:
+    post:
+      summary: Docref W4_step1 - Create a base order in OrderEngine
+      description: The REST enables order creation, by providing the selected eligible offer IDs as input.   The result of the Create Order for COP REST is the required order with a set of order actions (one order action per product in the offer) is created.  This service will return an order ID after the order and all included order actions were created successfully.
+      parameters:
+        - name: customer-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: username
+          in: header
+          type: string
+          description: authentication username for proxy connection
+          required: true
+        - name: password
+          in: header
+          type: string
+          description: authentication password for proxy connection
+          required: true
+        - name: applicationID
+          in: header
+          type: string
+          description: Unique designation for the invoking application (e.g. GatewayOrdering)
+          required: true
+        - name: transactionId
+          in: header
+          type: string
+          required: true
+          description: A unique ID for a certain REST call
+        - name: timestamp
+          in: header
+          type: integer
+          format: int64
+          description: time the REST call was invoked, in EpochTime format
+          required: true
+        - name: sc
+          required: true
+          in: query
+          type: string
+          description: Sales Channel identifier
+        - name: locale
+          required: true
+          in: query
+          type: string
+          description: Locale idenitifier, used for language translation
+        - name: createOrder
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/implCreateOrderRequest'
+      tags:
+        - W4_Step1
+      responses:
+        200:
+          description: Succesful order creation; return order object
+          schema:
+            $ref: '#/definitions/implCreateOrderResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+definitions:
+
+  CommonErrorReturn:
+    properties:
+      transactionId:
+        type: string
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: integer
+        format: int64
+        description: Time that the service call was returned in EpochTime format
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/ImplErrorInfo"
+  
+  ImplErrorInfo:
+    properties:
+      errorCode:
+        type: string
+      errorMessage:
+        type: string
+      Description:
+        type: string
+      errorUUID:
+        type: string
+
+  implCreateOrderRequest:
+    properties:
+      implCreateOrderInput:
+        type: object
+        $ref: '#/definitions/implCreateOrderInput'
+
+  implCreateOrderInput:
+    properties:
+      addressID:
+        type: string
+        description: SOLO ID of the location
+      userID:
+        type: string
+        description: User ID (for role-based eligibility determination)
+      ImplOfferID:
+        type: array
+        items:
+          $ref: '#/definitions/OrderOffer'
+        description: <description required>
+      serviceRequiredDate:
+        type: integer
+        format: int64
+        description: Date service is being requested; submitted in EpochTime format (milliseconds since 1/1/1970 00:00 GMT)
+      ImplAssignedProduct:
+        type: array
+        items:
+          $ref: '#/definitions/AssignedProduct'
+
+  OrderOffer:
+    properties:
+      offerID:
+        type: string
+        description: Offer catalog ID
+      orderActionType:
+        type: string
+        description: Order action type for this offer (PR-Provide, PV-Provide Move)
+        enum:
+          - PR
+          - PV
+        
+  AssignedProduct:
+    properties:
+      apID:
+        type: string
+        description: Assigned Product ID
+      orderActionType:
+        type: string
+        description: action type for this specific product (CH-Change, CE-Cease, SU-Suspend, HM-Change Move, RT-Restart, CR-Cease Restart, PR-Provide)
+        enum:
+         - CH
+         - CE
+         - SU
+         - HM
+         - RT
+         - CR
+         - PR
+
+  implCreateOrderResponse:
+    properties:
+      implCreateOrderOutput:
+        type: object
+        $ref: '#/definitions/implCreateOrderOutput'
+      transactionID:
+        type: string
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: integer
+        format: int64
+        description: Time that the service call was returned, in EpochTime format
+
+  implCreateOrderOutput:
+    properties:
+      orderID:
+        type: string
+        description: Unique identifier (within Order Engine) used by Gateway Ordering for all communication with Order Engine during the transaction. 
+        

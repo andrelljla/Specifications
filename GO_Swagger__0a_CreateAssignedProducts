@@ -1,0 +1,252 @@
+# this is draft #1 of the comprehensive WebAPI specification for interfacing with the AMDOCS Order Engine
+swagger: '2.0'
+info:
+  title: Gateway Ordering API - AMDOCS Interface (CreateAssignedProducts)
+  description: This specification defines the interface between WebAPI and the AMDOCS Ordering Engine.
+  version: "1.0.0"
+# the domain of the service
+host: gateway.chartercom.com
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+  /commerce/customer/{customer-id}/create-assigned-products:
+    post:
+      summary: Create an assigned product structure OE.
+      description: REST service will create an assigned product structure in the Ordering Engine (OE) system.  This structure is required to initiate any non-NewConnect processes.
+      parameters:
+        - name: customer-id
+          in: path
+          type: string
+          required: true
+          description: Unique identifier for the customer; default to 0 for anonymous or new customers
+        - name: offers
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/implCreateAssignedProductsRequest'
+
+      tags:
+        - Create Assigned Product    
+      responses:
+        200:
+          description: Successful completion; return array of categories, subcategories & filters
+          schema:
+              $ref: '#/definitions/implCreateAssignedProductsResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+definitions:
+
+  CommonNoErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+
+  CommonErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/CommonErrors"
+  
+  CommonErrors:
+    properties:
+      errCode:
+        type: string
+      errMessage:
+        type: string
+      errDescription:
+        type: string
+      errGUID:
+        type: string
+
+  implCreateAssignedProductsRequest:
+    properties:
+      implOffers:
+        type: array
+        items:
+          $ref: '#/definitions/implOffers'
+      orderLevelAttributes:
+        type: array
+        items: 
+          $ref: '#/definitions/FlexAttr'
+  
+  implOffers:
+    properties:
+      catalogID:
+        type: string
+        description: Unique identifier in the MEC product catalog
+      pcVersionID:
+        type: string
+        description: Catalog version of the item
+      attribute:
+        type: array
+        items:
+          $ref: '#/definitions/implAttribute'
+      product:
+        type: array
+        items:
+          $ref: '#/definitions/implProduct'
+      externalApID:
+        type: string
+        description: External identifier (from SOLO)
+        
+  implProduct:
+    properties:
+      cid:
+        type: string
+        description: CatalogID of the product/component
+      pcVersionID:
+        type: string
+        description: <dr>
+      component:
+        type: array
+        items:
+          $ref: '#/definitions/implComponent'
+      offerCID:
+        type: string
+        description: <dr>
+      externalAPID:
+        type: string
+        description: <dr>
+      relationID:
+        type: string
+        description: <dr>
+        
+  implComponent:
+    properties:
+      cid:
+        type: string
+        description: CatalogID of the product/component
+      pcVersionID:
+        type: string
+        description: <dr>
+      attribute:
+        type: array
+        items:
+          $ref: '#/definitions/implAttribute'
+      component:
+        type: array
+        items:
+          $ref: '#/definitions/implComponent'
+      externalAPID:
+        type: string
+        description: <dr>
+      pricePlan:
+        type: array
+        items:
+          $ref: '#/definitions/implPricePlan'
+        description: <dr>
+      relationID:
+        type: string
+        description: <dr>      
+  
+  implAttribute:
+    properties:
+      pid:
+        type: string
+        description: Unique Property ID (from MEC)
+      propertyName:
+        type: string
+        description: Unique Property ID (from MEC)
+      value:
+        type: string
+        description: <dr>
+      isVisible:
+        type: boolean
+        description: <dr>
+      isEditable:
+        type: boolean
+        description: <dr>
+      isMandatory:
+        type: boolean
+        description: <dr>
+
+  implPricePlan:
+    properties:
+      cid:
+        type: string
+        description: CatalogID of the product/component
+      pcVersionID:
+        type: string
+        description: <dr>
+      externalAPID:
+        type: string
+        description: <dr>
+      relationID:
+        type: string
+        description: <dr>      
+
+  implCreateAssignedProductsResponse:
+    properties:
+      implBaseReturn:
+        type: object 
+        $ref: "#/definitions/CommonNoErrorReturn"    
+      implAssignedProductID:
+        type: object 
+        $ref: "#/definitions/implAssignedProduct"    
+
+  implAssignedProduct:
+    properties:
+      apID:
+        type: string
+        description: <dr>
+      externalAPID:
+        type: string
+        description: <dr>
+      
+  FlexAttributeValue:
+    properties:
+      integerValue:
+        type: integer
+        description: Integer Value
+      stringValue:
+        type: string
+        description: String Value
+      dateValue:
+        type: string
+        format: date
+        description: Date Value
+      decimalValue:
+        type: number
+        format: double
+        description: Decimal Value
+      booleanValue:
+        type: boolean
+        description: Boolean Value
+      valueType: 
+        type: string
+        description: Data type for the defined attribute; only the corresponding value should be referenced.
+        enum:
+          - BOOLEAN
+          - DATE
+          - DECIMAL
+          - INTEGER
+          - STRING
+        
+  FlexAttr:
+    properties:
+      name:
+        type: string
+        description: Custom attribute name
+      value: 
+        type: object
+        $ref: '#/definitions/FlexAttributeValue'
+        description: Custom attribute value

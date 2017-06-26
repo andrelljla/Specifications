@@ -1,0 +1,390 @@
+swagger: '2.0'
+
+info:
+  version: "1.0.0"
+  title: Account resource
+  description: An Account is the fundamental resource in Gateway, without which almost none of the UI makes sense. It contains key information about a Charter customer and their location in the context of their interaction with a Customer Service Representative (CSR).
+consumes:
+ - application/json
+produces:
+ - application/json
+
+paths:
+  /accounts/v1:
+    get:
+      description: |
+        Searches for `Accounts` matching specified criteria, as defined by the query string parameters. This maps to an "Advanced Search" in which one or more parameter values are matched against the corresponding `Account` attributes. This approach may be used if the desired `Account` is too new to have been populated in the cache used by the "Quick Search" (**GET /searchableaccounts/v1**) or if the CSR desires more control over the search.
+      parameters:
+        -
+          name: accountNumber
+          in: query
+          description: Unique identifier for an `Account` that is published on customer correspondence (exact match)
+          required: false
+          type: string
+        -
+          name: phoneNumber
+          in: query
+          description: Primary telephone number of the customer (exact match)
+          required: false
+          type: string
+        -
+          name: locationId
+          in: query
+          description: Unique identifier of the physical location associated with the `Account` (exact match)
+          required: false
+          type: integer
+        -
+          name: familyName
+          in: query
+          description: Last name of customer(starts-with match)
+          required: false
+          type: string
+        -
+          name: givenName
+          in: query
+          description: First name of customer (starts-with match)
+          required: false
+          type: string
+        -
+          name: ssn
+          in: query
+          description: Social security number of customer (exact match)
+          required: false
+          type: string
+        -
+          name: addressLine1
+          in: query
+          description: Street address of location (starts-with match)
+          required: false
+          type: string
+        -
+          name: addressLine2
+          in: query
+          description: Second line of location's street address (starts-with match)
+          required: false
+          type: string
+        -
+          name: city
+          in: query
+          description: City name of location (starts-with match)
+          required: false
+          type: string
+        -
+          name: territoryCode
+          in: query
+          description: Two-character state abbreviation of location (exact match)
+          required: false
+          type: string
+        -
+          name: postalCode
+          in: query
+          description: Five digit zip code of location (exact match)
+          required: false
+          type: string
+        -
+          name: macAddress
+          in: query
+          description: MAC address of a `Device` associated with the `Account` (exact match)
+          required: false
+          type: string
+        -
+          name: macForCableModem
+          in: query
+          description: Value is *true* if the MAC address is for a cable modem, *false* if for a MTA. Relevant only if macAddress is present. If missing, assume *false*
+          required: false
+          type: boolean
+        -
+          name: serialNumber
+          in: query
+          description: Serial number of a `Device` (exact match)
+          required: false
+          type: string
+        -
+          name: jobNumber
+          in: query
+          description: Unique identifier of specific work performed as part of a `Work Order` for an `Account` (exact match)
+          required: false
+          type: string
+        -
+          name: orderNumber
+          in: query
+          description: Unique identifier of a `Work Order` (exact match)
+          required: false
+          type: string
+        -
+          name: limit
+          in: query
+          description: Number of items to include in the response
+          required: true
+          type: integer
+        -
+          name: offset
+          in: query
+          description: 0-based index within overall query results of the first item to include in the response
+          required: true
+          type: integer
+      responses:
+        200:
+          description: An array of `Accounts` matching the specified criteria, sorted in descending order of search rank
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Account"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+  /accounts/v1/{id}:
+    get:
+      description: |
+        Retrieves information for the `Account` whose ID is specified in the URI.
+      parameters:
+        -
+          name: id
+          in: path
+          description: Unique identifier for an `Account`
+          required: true
+          type: integer
+      responses:
+        200:
+          description: An `Account` matching the specified accountNumber
+          schema:
+            $ref: "#/definitions/Account"
+        404:
+          description: No `Account` was found matching the specified accountNumber
+          schema:
+            $ref: "#/definitions/Error"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      description: |
+        Updates one or more attributes of the `Account` whose ID is specified in the URI.
+      parameters:
+        -
+          name: id
+          in: path
+          description: Unique identifier for an `Account`
+          required: true
+          type: integer
+        -
+          name: account
+          in: body
+          description: Updated `Account` information. The following attributes are currently editable - billingAddress, sourceStreetAddress, primaryPhone, alternatePhone, email, ppvLimit, securityCode.
+          required: true
+          schema:
+            $ref: "#/definitions/Account"
+      responses:
+        200:
+          description: The `Account` was updated successfully
+          schema:
+            $ref: "#/definitions/Account"
+        404:
+          description: No `Account` was found matching the specified accountNumber
+          schema:
+            $ref: "#/definitions/Error"
+        422:
+          description: The updated `Account` information did not pass validation.
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/ValidationError"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+  /accounts/v1/{id}/verifiedpins/{pin}:
+    get:
+      description: |
+        Verifies the specified PIN for the `Account` whose ID is specified in the URI. It is a separate request because, while the PIN is available when we populate the `Account` representation, we do not want to return that value to the client because it would then be available for inspection in the browser (thus defeating its purpose).
+      parameters:
+        -
+          name: id
+          in: path
+          description: Unique identifier for an `Account`
+          required: true
+          type: integer
+        -
+          name: pin
+          in: path
+          description: PIN associated with the `Account`
+          required: true
+          type: string
+      responses:
+        200:
+          description: PIN was verified successfully
+        404:
+          description: PIN was not verified successfully
+          schema:
+            $ref: "#/definitions/Error"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+definitions:
+  Account:
+    description: If an active Account does not yet exist for a Customer-Location (which could be the case for Gateway Ordering), the Account representation would still be used, but status would be "Pending" and the non-Customer-Location attributes would be blank/empty
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `Account`
+      number:
+        type: string
+        description: Traditionally, another unique identifier for an `Account`, although this will no longer be guaranteed as new billing systems are introduced. This number is published on customer correspondence
+      type:
+        type: string
+      status:
+        type: string
+        enum:
+        - Active
+        - Inactive
+        - Never
+        - Pending
+      billingAddress:
+        $ref: "#/definitions/Address"
+      serviceAddress:
+        $ref: "#/definitions/Address"
+      sourceStreetAddress:
+        $ref: "#/definitions/Address"
+      primaryPhone:
+        $ref: "#/definitions/TelephoneNumber"
+      alternatePhone:
+        $ref: "#/definitions/TelephoneNumber"
+      emailAddress:
+        $ref: "#/definitions/EmailAddress"
+      ppvLimit:
+        type: number
+      securityCode:
+        type: string
+      creditClass:
+        type: string
+      bulkFlag:
+        type: boolean
+      paperlessFlag:
+        type: boolean
+      authorizedUsers:
+        type: array
+        items:
+          type: string
+      associatedAccounts:
+        type: array
+        items:
+          $ref: "#/definitions/AccountIdentity"
+      securityChallenge:
+        $ref: "#/definitions/Challenge"
+      individual:
+        $ref: "#/definitions/Individual"
+      location:
+        $ref: "#/definitions/Location"
+      links:
+        type: array
+        items:
+          $ref: "#/definitions/Link"
+  AccountIdentity:
+    description: Only those attributes of an `Account` that identify it from a system or CSR standpoint
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `Account`
+      number:
+        type: string
+        description: Traditionally, another unique identifier for an `Account`, although this will no longer be guaranteed as new billing systems are introduced. This number is published on customer correspondence
+  Address:
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `Address`, potentially allowing for independent updates
+      line1:
+        type: string
+      line2:
+        type: string
+      city:
+        type: string
+      territoryCode:
+        type: string
+      postalCode:
+        type: string
+  TelephoneNumber:
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for a `TelephoneNumber`, potentially allowing for independent updates
+      number:
+        type: string
+  EmailAddress:
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `EmailAddress`, potentially allowing for independent updates
+      text:
+        type: string
+  Challenge:
+    properties:
+      question:
+        type: string
+      answer:
+        type: string
+  Individual:
+    description: A person accountable for purchases of `Services`
+    properties:
+      id:
+        type: integer
+      givenName:
+        type: string
+      familyName:
+        type: string
+      ssn:
+        type: string
+      employeeFlag:
+        type: boolean
+  Location:
+    description: A physical location to which `Services` are delivered
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      routingArea:
+        type: string
+      sysprin:
+        type: string
+      agentId:
+        type: string
+      rateCenter:
+        type: string
+      node:
+        type: string
+      level1:
+        type: string
+      level2:
+        type: string
+      headend:
+        type: string
+      comments:
+        type: string
+  Link:
+    description: A link to a related resource (usually a child)
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+  Error:
+    description: An error condition
+    properties:
+      userMessage:
+        type: string
+        description: A user-friendly message describing the error and (ideally) what to do about it
+      devopsMessage:
+        type: string
+        description: A detailed message containing information of use to developers or operations people
+  ValidationError:
+    description: A collection of global and attribute-level validation errors
+    properties:
+      attribute:
+        type: string
+      errors:
+        type: array
+        items:
+          type: string

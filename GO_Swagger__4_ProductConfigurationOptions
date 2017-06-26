@@ -1,0 +1,1108 @@
+# this is draft #1 of the comprehensive WebAPI specification for interfacing with the AMDOCS Order Engine
+swagger: '2.0'
+info:
+  title: Gateway Ordering API - AMDOCS Interface (Offers)
+  description: This specification defines the interface between WebAPI and the AMDOCS Ordering Engine.
+  version: "1.0.0"
+# the domain of the service
+host: gateway.chartercom.com
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+
+  /commerce/customer/{customer-id}/product-order/{product-order-item-id}/product-configuration-options:
+    post:
+      summary: Docref W4_step3 - Get customization details
+      description: The Product Configuration Options REST retrieves the product configuration of a product in an order from Ordering system. The returned configuration includes the current implemented configuration and all the available changes that can be applied on the product within the order. This REST is expected to be called by Charter per each Order Action ID retrieves from Product Order Items REST.
+      parameters:
+        - name: customer-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: product-order-item-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: username
+          in: header
+          type: string
+          description: authentication username for proxy connection
+          required: true
+        - name: password
+          in: header
+          type: string
+          description: authentication password for proxy connection
+          required: true
+        - name: applicationID
+          in: header
+          type: string
+          description: Unique designation for the invoking application (e.g. GatewayOrdering)
+          required: true
+        - name: timestamp
+          in: header
+          type: integer
+          description: time the REST call was invoked, represented in Epoch time format
+          required: true
+        - name: sc
+          required: true
+          in: query
+          type: string
+          description: Sales Channel identifier
+        - name: locale
+          required: true
+          in: query
+          type: string
+          description: Locale identifier, used for language translation
+        - name: getProductConfigurationOptions
+          in: body
+          schema:
+            $ref: '#/definitions/ImplProductConfigurationOptionsRequest'
+          required: true
+          description: <dr>
+
+      tags:
+        - W4_Step3
+      responses:
+        200:
+          description: Succesful operation; return products associated with selected offers
+          schema:
+            $ref: '#/definitions/ImplProductConfigurationOptionsResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+
+definitions:
+
+  CommonErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/CommonErrors"
+  
+  CommonErrors:
+    properties:
+      errCode:
+        type: string
+      errMessage:
+        type: string
+      errDescription:
+        type: string
+      errGUID:
+        type: string
+
+  ImplProductConfigurationOptionsRequest:
+    properties:
+      implRetrieveProductInOrderConfigurationRequest:
+        type: object
+        $ref: '#/definitions/ImplRetrieveProductInOrderConfigurationRequest'
+        description: Main input
+      serviceabilityObject:
+        type: object
+        $ref: '#/definitions/ServiceabilityObject'
+        description: Addiktional information to support serviceability
+
+  ImplProductConfigurationOptionsResponse:
+    properties:
+      
+      implRetrieveProductOrderConfigurationResponse:
+        type: object
+        $ref: "#/definitions/ImplRetrieveProductInOrderConfigurationResponse"
+      transactionId:
+        type: string
+        description: A unique ID for a certain REST call
+      timeStamp:
+        type: integer
+        description: The time of the response Expected Date as Long.  see assumption #3
+      implErrorInfo:
+        type: array
+        items:
+          $ref: '#/definitions/ImplErrorInfo'
+
+#############
+  FlexAttributeValue:
+    properties:
+      integerValue:
+        type: integer
+        description: Integer Value
+      stringValue:
+        type: string
+        description: String Value
+      dateValue:
+        type: integer
+        description: Date Value in Epoch Time format
+      decimalValue:
+        type: number
+        format: double
+        description: Decimal Value
+      booleanValue:
+        type: boolean
+        description: Boolean Value
+      valueType: 
+        type: string
+        description: Data type for the defined attribute; only the corresponding value should be referenced.
+        enum:
+          - BOOLEAN
+          - DATE
+          - DECIMAL
+          - INTEGER
+          - STRING
+        
+  FlexAttr:
+    properties:
+      name:
+        type: string
+        description: Custom attribute name
+      value: 
+        type: object
+        $ref: '#/definitions/FlexAttributeValue'
+        description: Custom attribute value
+
+  Attachment:
+    properties:
+      purpose: 
+        type: string
+        description: The purpose of the Attachment, valid values from Attachment Purpose. Examples might include Marketing, Training
+      attachmentLocation:
+        type: string
+        description: A URL (or some other location string) that defines the logical location of the Attachment within some external repository
+      type:
+        type: string
+        description: A logical type for the Attachment, valid values from AttachmentType.  Examples might include Document, Picture Contrast with mime_type, which is the technical type of the content.
+
+  ImplCalculatedPrice:
+    properties:
+      sequenceId:
+        type: integer
+        description: Sequence ID
+      ppCID:
+        type: string
+        description: the Price Plan Catalog ID (PP CID) automatically generated in MEC
+      ppName:
+        type: string
+        description: the Price Plan description, free text for maintenance purposes
+      pPType:
+        type: string
+        description: Price Plan type.  Constrained LoV [RP – retail price (regular price). Each Price Plan is associated to a retail price (the record with this PP TYPE is mandatory) DP – Percentage Discount (the record with this PP TYPE is optional) DF – Flat Discount (this amount overrides the regular price) (the record with this PP TYPE is optional) DD – Dollar Off Discount (the record with this PP TYPE is optional)]
+        enum:
+        - RP
+        - DP
+        - DF
+        - DD
+      tierFrom:
+        type: string
+        description: The discount tier’s start (in month), for example 1, meaning from the 1 month, or 13, meaning from the second year
+      tierTo:
+        type: string
+        description: The discount tier’s end (in month), for example 12, meaning till the 12-th month (discount is applied for one year only). The value 999 will mean that discount is not limited in time
+      quantityAtt:
+        type: string
+        description: The ID of the quantity attribute on the component. This code, which is defined in MEC for each attribute, will help the target application to find the quantity value set during the product configuration.
+      quantityFrom:
+        type: integer
+        description: The number of the service instances from which the discount is applied.
+      quantityTo:
+        type: integer
+        description: The number of the service instances to which the discount is applied. The value 999 will mean that discount is not limited in number of instances.
+      amountType:
+        type: string
+        description: Type of the amount price in the next column.  Constrained LoV (OC – One-Time price, RC – Recurring price, DC – Discount)
+        enum:
+        - OC
+        - RE
+        - DC
+      amount:
+        type: number
+        description: The value of dollar amount if the retail price, flat discount or dollar off discount, or percentage is a percentage discount
+      quantity:
+        type: integer
+        description: Number of related price plans
+      startDate:
+        type: integer
+        description: The Price Plan effective date Expected Date as Long (Epoch time). 
+      endDate:
+        type: integer
+        description: The Price Plan end date Expected Date as Long (Epoch time). An empty field will mean that no expiraon date was set.
+      biller:
+        type: string
+        description: Name of the biller (CSG)
+      market:
+        type: string
+        description: Name fo the market
+      subMarket:
+        type: string
+        description: Name of the submarket
+      ftaFrom:
+        type: string
+        description: FTA from
+      ftaTo:
+        type: string
+        description: FTA To
+      custType:
+        type: string
+        description: Type of custoemr
+      code:
+        type: string
+        description: Value of the CSG code
+      codeType:
+        type: string
+        description: type of the code to be sent to the Biller (for CSG maintenance use).  Constrained LoV (I - Installation, S - Service code, P - Package code, T - Tracking code, D - Discount)
+        enum:
+        - I
+        - S
+        - P
+        - T
+        - D
+#      basicItemQuantity:
+#        type: integer
+        description: Amount of instances of price entity
+
+  TopLevelConfiguration:
+    properties:
+      implCalculatedPrices: 
+        type: array
+        items:
+          $ref: '#/definitions/ImplCalculatedPrice'
+        description: Prices for the TopLevelProductConfiguration as configured and maintained in the CATALOG PRICE table. It will not be from price quoting engine.
+      displayableItems:
+        type: array
+        items:
+          $ref: '#/definitions/ProductDisplay'
+        description: Contains products and Characteristic Values that are defined as related to this Configuration Group
+      compatabilityStatus:
+        type: string
+        description: Constrained compatability status
+        enum:
+          - BLOCKING
+          - COMPATIBLE
+          - NOT_CHECKED
+      productID:
+        type: string
+        description: The ID of the Product
+      temporaryID:
+        type: string
+        description: Operation Extension attribute. This attribute is used differently on an operation by operation basis when an operation requires non-business data as a parameter to the operation. The operation must document explicitly how it is used. An example of its use is for the consumer technical identifier of new anonymous data types instances such as a product instance that has not been created yet.
+      serviceID:
+        type: string
+        description: The Service ID of the Product
+      Messages:
+        type: array
+        items:
+          $ref: '#/definitions/RuleExceptionMessage'
+        description: A message resulting from the execution of a rule-based operation.  The results of these operations typically include an array of these messages.
+      productSpecification:
+        type: object
+        $ref: '#/definitions/ProductSpecification'
+      effectiveCatalogVersion:
+        type: string
+        description: The effective Catalog version of the ProductSpecification this Product belongs to.
+      lineOfBusiness:
+        type: string
+        description: Describes which LineOfBusiness the ProductSpecifications associated to this category belong to.
+      productOffering:
+        type: object
+        $ref: '#/definitions/ProductOffering'
+        description: Entity that defines the elements that can be sold.
+      
+  ProductDisplay:
+    properties:
+      implCalculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/ImplCalculatedPrice'
+        description: Total prices for the ProductDisplay as configured and maintained in the CATALOG PRICE table. It will not be from price quoting engine.
+      displayableItems:
+        type: array
+        items:
+          $ref: '#/definitions/ProductDisplay'
+        description: Products and CharacteristicValues that are defined as related to this configuration group Group.
+      productID:
+        type: string
+        description: The catalog ID of the Product
+      productSpecContainmentID:
+        type: string
+        description: The ID of the ProductSpecContainment between this ProductDisplay and its parent product.
+      displayInformation:
+        type: object
+        $ref: '#/definitions/ProductSpecDisplay'
+        description: How the ProductSpecification should be displayed in a user interface application.
+      productSpecContainment:      
+        type: object
+        $ref: '#/definitions/ProductSpecContainment'
+        description: The details of the ProductSpecContainment leading to the parent product.
+      originalCatalogDisplayInformation:
+        type: object
+        $ref: '#/definitions/ProductSpecDisplay'
+        description: The display information defined by in the product catalog.
+      temporaryID:
+        type: string
+        description: Temporary ID
+      implDisplayablePricePlan:      
+        type: array
+        items:
+          $ref: '#/definitions/ImplAssignedPricePlan'
+        description: List of child AssignedPricePlan of this Product.
+      displayableCharacteristics:      
+        type: array
+        items:
+          $ref: '#/definitions/CharacteristicValueDisplay'
+        description: Contains Products and CharacteristicValues that are defined as related to this configuration group.
+      allowedActions:
+        type: array
+        items:
+          type: string
+        description: Constrained LoV of allowed actions
+        enum:
+          - AMEND
+          - CANCEL
+          - CANCEL_OFFER
+          - CANCEL_PARTIAL
+          - CANCEL_REPLACE_OFFER
+          - CREATE
+          - DISCONTINUE
+          - EDIT
+          - RESUME_NEGOTIATION
+          - TAKEOVER
+          - WITHDRAW_AMEND
+          - WITHDRAW_CANCEL
+      totalDeposit:
+        type: object
+        $ref: '#/definitions/TotalDepositCalculationResult'
+        description: The total Deposits of the Product.
+      selected:
+        type: boolean
+        description: status
+      businessType:
+        type: string
+        description: Constrained LoV for valid business types
+        enum:
+          - DEVICE
+          - FRIENDS_AND_FAMILY
+          - TV_CHANNEL
+          - TV_PACKAGE
+      serviceID:
+        type: string
+        description: The service ID of the Product.
+      name:
+        type: string
+        description: Product name.
+      action:
+        type: string
+        description: Constrained LoV for action
+        enum:
+          - Add
+          - Remove
+          - Reestablish
+          - Resume
+          - Suspend
+          - Change
+      status:
+        type: string
+        description: Constrained LoV for status
+        enum:
+          - ACTIVE
+          - CEASED
+          - SUSPENDED
+
+  ImplAssignedPricePlan:
+    properties:
+      implCalculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/ImplCalculatedPrice'
+        description: Total prices by type as configured and maintained in the CATALOG PRICE table. It will not be from price quoting engine. 
+      displayInformation:
+        type: object
+        $ref: '#/definitions/PriceSchemaDisplay'
+        description: The display information of the AssignedPricePlan 
+      allowedActions:
+        type: array
+        items:
+          $ref: '#/definitions/AllowedAction'
+      selected:
+        type: boolean
+        description: This indicates whether the AssignedPricePlanDisplay is part of the Product configuration or not
+      assignedPricePlanID:
+        type: string
+        description: A unique IDentifier of the AssignedPricePlanDisplay
+      productSpecPricingID:
+        type: string
+        description: ID of the ProductSpecPricing
+      crossProductDiscount:
+        type: boolean
+        description: Indicates whether this AssignedPricePlanDisplay was added to the Product as result of cross products discounts
+      productSpecPricing:
+        type: object
+        $ref: '#/definitions/ProductSpecPricing'
+        description: The details of the ProductSpecPricing leading to the parent product
+      crossProductRuleDescription:      
+        type: string
+        description: Contain the description of the cross products discounts rule, that added this AssignedPricePlanDisplay.  If the AssignedPricePlanDisplay was not added as result of cross products discounts rule - this field will be empty.
+      name:
+        type: string
+        description: A word, term, or phrase by which the PriceSchema is known and distinguished from other PriceSchemas
+      action:
+        type: object
+        $ref: '#/definitions/ProductConfigurationActionType'
+        description: Actions that may be done on the AssignedPricePlanDisplay
+      status:
+        type: string
+        description: The status of the AssignedPricePlanDisplay, For example Active, Cease, Suspended.  When a Assigned AssignedPricePlanDisplay is not saved yet (catalog definition) this field will be empty.  Constrained LoV (“AC” – ACTIVE, “CE” – CEASED, “SU” - SUSPENDED)
+        enum:
+          - ACTIVE
+          - CEASED
+          - SUSPENDED
+
+  RuleExceptionMessage:
+    properties:
+      objectId:
+        type: string
+        description: Identifies the object that this message pertains to.
+      severity:
+        type: string
+        description: Messag serverity
+      productSpecCharacteristicID:
+        type: string
+        description: The ProductSpecCharacteristics used by a ProductSpecification.
+      messageId:
+        type: string
+        description: An identifier that uniquelyidentifies this message. Used by certain applications in conjunction with RuleExecutionMessage parameters to create a truncated message suitable for some UI devices.
+      ruleLevel:
+        type: string
+        description: Indicates the configuration level that the rule runs on. Default value will be Product. Constrained LoV for rule level (“A” - ALL_STEPS, “P”- PRODUCT, “S” - STEP)
+          - A
+          - P
+          - S
+      objectName:
+        type: string
+        description: <dr>
+      parameters:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: Named values that were used to build the message text.  Used by certain applications in conjunction with MessageId to create a truncated message suitable for some UI devices.
+      text:
+        type: string
+        description: The message formatted in the client's locale.
+
+  ProductSpecification:
+    properties:
+      plan:
+        type: object
+        $ref: '#/definitions/PriceSchema'
+        description: Pricing Object
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: Dynamic Properties
+      attachments:
+        type: array
+        items:
+          $ref: '#/definitions/Attachment'
+        description: Documents associated to the ProductSpecification
+      characteristics:
+        type: array
+        items:
+          $ref: '#/definitions/ProductSpecCharacteristic'
+        description: The ProductSpecCharacteristics used by a ProductSpecification.
+      name:
+        type: string
+        description: The reference number of the ProductOrderItem
+      id:
+        type: string
+        description: The unique primary key of the ProductSpecification, together with the related ProductCatalogVersion
+      type:
+        type: string
+        description: The type of the ProductSpecification. A means of classification 
+      level:
+        type: string
+        description: Level of the product, in other words whether it is GLP or not
+      description: 
+        type: string
+        description: The ID of the ProductOrderItem
+      code: 
+        type: string
+        description: The ID of the Product
+        
+  ProductOffering:
+    properties:
+      products: 
+        type: array
+        items: 
+          $ref: '#/definitions/ProductSpecification'
+      detailGroups:
+        type: array
+        items:
+          $ref: '#/definitions/CatalogItemCharacteristicGroup'
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: List of additional properties that are assigned to the ProductOffering
+      attachments:
+        type: array
+        items:
+          $ref: '#/definitions/Attachment'
+        description: Documents that are associated with the ProductOffering
+      implCalculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/ImplCalculatedPrice'
+        description: One time charge of an item as configured and maintained in the CATALOG PRICE table. It will not be from price quoting engine.
+      name: 
+        type: string
+        description: The reference number of the ProductOrderItem
+      id:
+        type: string
+        description: A unique IDentifier together with the related ProductOffering.version. Since a ProductOffering is always created or changed within a given CatalogVersion, it is the combination that uniquely IDentifies the fixed attributes and relations of the ProductOffering.
+      bundle:
+        type: boolean
+        description: If value is True then the ProductOffering is a bundle. A bundle is a ProductOffering that is composed of more than one ProductSpecifications, regardless if it is more than one instance of the same product or instances of different products.
+      description:
+        type: string
+        description: The ID of the ProductOrderItem
+      code:
+        type: string
+        description: The ID of the Product
+
+  ProductSpecDisplay:
+    properties:
+      enabled:
+        type: boolean
+        description: If value is True then the ProductSpecification is editable.
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: List of additional properties that were assigned to the ProductSpecDisplay.
+      visible:
+        type: boolean
+        description: If value is True then the ProductSpecification should be displayed.
+      mandatory:
+        type: boolean
+        description: If value is True then the ProductSpecification should be enforced as mandatory.
+      showStructure:      
+        type: boolean
+        description: If value is True, then consumer is expected to show the structure of the Product, including ProductCharacteristics, contained Products etc. If value is false, then consumer is expected to show the Product in abbreviated form, eg just the title.
+
+  ProductSpecContainment:
+    properties:
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: List of additional properties that were assigned to the ProductSpecContainment.  Core provider software does not use these properties but specific implementations may add such properties and change behavior accordingly.
+      minimumQuantity:
+        type: integer
+        description: The minimum number of copies of ProductSpecification that must be instantiated as Products contained withinthe parent product.
+      containedProduct:
+        type: object
+        $ref: '#/definitions/ProductSpecification'
+        description: Contained product
+      defaultQuantity:
+        type: integer
+        description: The default number of copies of the child product that are created contained within in the parent product.  When ProductSpecContainmentcontainedProducts is an array of different ProductSpecifications then this value has no meaning.
+      maximumQuantity:
+        type: integer
+        description: The maximum number of copies of ProductSpecification that can be instantiated as products contained within the parent product.
+
+  CharacteristicValueDisplay:
+    properties:
+      displayInformation:
+        type: object
+        $ref: '#/definitions/CharacteristicDisplay'
+        description: The display information of a Characteristic defined by in the product catalog
+      originalCatalogDisplayInformation:
+        type: object
+        $ref: '#/definitions/CharacteristicDisplay'
+        description: The display information of a Characteristic defined by in the product catalog 
+      productSpecCharacteristicID:
+        type: string
+        description: The ID of the ProductSpecCharacteristic 
+      productSpecCharacteristic:
+        type: object
+        $ref: '#/definitions/ProductSpecCharacteristic'
+        description: The ProductSpecCharacteristics used by a ProductSpecification. 
+      value:
+        type: string
+        description: A value that the Characteristic can take on. In the case of a range value, this represents the lower value of the range.  See the class notes for the formatting rules for a value whose type is other than String.
+      
+  TotalDepositCalculationResult:
+    properties:
+      actualAmount:
+        type: number
+        description: The total amount to be used to when paying the {@LABEL TotalDepositCalculationResult}. This amount includes any waiving or overrides
+      overrideAmount:
+        type: number
+        description: The total of all the overrides and waives amount of the {@LABEL DepositCalculatedResult}.
+      originalAmount:
+        type: number
+        description: The total amount to be paid as a {@LABEL TotalDepositCalculationResult} recommended by the calculation.
+      currency:
+        type: string
+        description: The currency in which the money amounts are applied.
+        enum:
+        - USD
+      
+  TotalDepositCalculationResult:
+    properties:
+      actualAmount:
+        type: number
+        format: double
+        description: <dr>
+      overrideAmount:
+        type: number
+        format: double
+        description: <dr>
+      originalAmount:
+        type: number
+        format: double
+        description: <dr>
+      currency:
+        type: string
+        description: <dr>
+
+  ProductConfigurationActionType:
+    properties:
+      value:
+        type: string
+        description: Constrained LoV for configuration Action type
+        enum:
+          - Add
+          - Remove
+          - Reestablish
+          - Resume
+          - Suspend
+          - Change
+
+  PriceSchemaDisplay:
+    properties:
+      enabled:
+        type: boolean
+        description: If value is True then the PriceSchema is editable
+      visible:
+        type: boolean
+        description: If value is True then the PriceSchema should be displayed
+        
+  ProductSpecPricing:
+    properties:
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: List of additional properties that were assigned to the association.
+      includeByDefault:
+        type: string
+        description: If value is True then the pricing is included when the Product is instantiated from the ProductSpecification.  Constrained LoV (INCLUDED_BY_DEFAULT - The element is included, but can be removed.  MANDATORY - The element is included and cannot be removed. NOT_INCLUDED_BY_DEFAULT - The element is not included and can be added).
+        enum:
+          - INCLUDED_BY_DEFAULT
+          - MANDATORY
+          - NOT_INCLUDED_BY_DEFAULT
+      childPricingSchema:
+        type: object
+        $ref: '#/definitions/PriceSchema'
+        description: The PriceSchema that defines the pricing.
+      id:
+        type: string
+        description: A unique identifier
+        
+  PriceSchema:
+    properties:
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: List of additional properties that were assigned to the PriceSchema
+      implCalculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/ImplCalculatedPrice'
+        description: Total Charge of an item as configured and maintained in the CATALOG PRICE table. It will not be from price quoting engine.
+      marketingDescription:
+        type: string
+        description: URL to the marketing description of the plan
+      name:
+        type: string
+        description: A word, term, or phrase by which the PriceSchema is known and distinguished from other PriceSchemas
+      id:
+        type: string
+        description: A unique IDentifier.
+      type:
+        type: string
+        description: The type of the PriceSchema.  Constrained LoV for Price Schema Type 
+        enum:
+          - ADDITIONAL
+          - BASIC
+          - PRIMARY
+          - DISCOUNT
+      level:
+        type: string
+        description: The level that the PriceSchema can be applied
+      image:
+        type: string
+        description: URL to the image of the plan
+      description:
+        type: string
+        description: A long textual description of the PriceSchema
+        
+  CharacteristicDisplay:
+    properties:
+      enabled: 
+        type: boolean
+        description: If True, then the Characteristic is editable.
+      showHelpText:
+        type: boolean
+        description: If True, then help text should be displayed with the Characteristic.  The description of the Characteristic is typically used as the help text.
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: List of additional properties that were assigned to the CharacteristicDisplay.
+      visible:
+        type: boolean
+        description: If True, then the Characteristic should be displayed.
+      displayFormat:
+        type: string
+        description: The format for display for the Charactersitic.  Typically a user interface type of control such as a button or calendar widget.
+        enum:
+        - CALENDAR
+        - CALENDAR_AND_TIME
+        - CHECKBOX
+        - DATE_ONLY
+        - DROPDOWN_LISTBOX
+        - LISTBOX
+        - MULTI_LINE_TEXTBOX
+        - RADIO_BUTTON
+        - TEXTBOX
+      numberOfLines:
+        type: integer
+        description: The vertical size that best suits the display of the Characteristic
+      mandatory:
+        type: boolean
+        description: If True, then the Characteristic must be assigned a value.
+      name: 
+        type: string
+        description: The name that should be used as a label for Characteristic. It is an alternative to the characteristic name.
+      mask:
+        type: string
+        description: The display mask to be used for the Characteristic
+
+  ProductSpecCharacteristic:
+    properties:
+      enabled: 
+        type: boolean
+        description: If True, then the Characteristic is editable.
+      showHelpText:
+        type: boolean
+        description: If True, then help text should be displayed with the Characteristic. The description of the Characteristic is typically used as the help text.
+      valueBasicType:
+        type: string
+        description: The underlying (basic) type of value that the CharacteristicValueType represents.  Constrained LoV for Value Basic Type (“BL”- BOOLEAN, “CH” – STRING, “CX”- COMPLEX, “DB” – DOUBLE, “DT” – DATE, “NU” - INTEGER)
+        enum:
+          - BL
+          - CH
+          - CX
+          - DB
+          - DT
+          - NU
+      valueRestriction:
+        type: string
+        description: Defines how the possible set of values for the CharacteristicValueType are restricted.  Constrained LoV for Value Restriction (“DI” – DISCRETE, “GE” – GENERAL, “RA” - RANGE)
+        enum:
+          - DI
+          - GE
+          - RA
+      dynamicProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'
+        description: List of additional properties that were assigned to the Characteristic
+      visible:
+        type: boolean
+        description: If True, then the Characteristic should be displayed.
+      displayFormat:
+        type: string
+        description: The format for display for the Charactersitic.  Typically a user interface type of control such as a button or calendar widget. Constrained LoV ()
+      numberOfLines:
+        type: integer
+        description: The vertical size that best suits the display of the Characteristic.
+      mandatory:
+        type: boolean
+        description: If True, then the Characteristic should be assigned
+      name: 
+        type: string
+        description: Free format short textual description.
+      defaultValue:
+        type: object
+        $ref: '#/definitions/CharacteristicValue'
+        description: Represents the default value that is placed into the CharacteristicValue when a ConfigurableCharacteristic is instanciated.
+      length:
+        type: integer
+        description: Maximum length of the value
+      id:
+        type: string
+        description: A unique IDentifier
+      mask:
+        type: string
+        description: The display mask to be used for the characteristic
+      values:
+        type: array
+        items:
+          $ref: '#/definitions/CharacteristicValue'
+        description: Represents the set of valid values of a characteristic which valueType is DISCRETE or the set of valid ranges of a Characteristic which valueType is RANGE.
+      description:
+        type: string
+        description: Characteristic description.
+      code: 
+        type: string
+        description: A value that the characteristic can take on.  In the case of a range value, this represents the lower value of the range. See the class notes for the formatting rules for a value whose type is other than String.
+      
+  CharacteristicValue:
+    properties: 
+      valueForDisplay:
+        type: string
+        description: A representation of the value suitable for display to human users.  For example in Amdocs Shared Product Information Model, represents the decode (translation into current national language) where the value is a code. For example, a code AC might be used to represent Active state of a Product the English decode would be Active.
+      valueTo:
+        type: string
+        description: The upper range value that a range-type Characteristic can take on.  See the class notes for the formatting rules for a value whose type is other than String.
+      value:
+        type: string
+        description: A value that the Characteristic can take on. In the case of a range value, this represents the lower value of the range.  See the class notes for the formatting rules for a value whose type is other than String.
+
+  CatalogItemCharacteristic:
+    properties:
+      valueRestriction:
+        type: string
+        description: Defines how the possible set of values are restricted. Constrained LoV for Value Restriction
+        enum:
+          - DI
+          - GE
+          - RA
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/definitions/FlexAttr'      
+        description: Additional properties list of the item
+      valueType:  
+        type: string
+        description: The underlying (basic) type of value of the characteristic.  Constrained LoV for Value Type 
+        enum:
+          - BL
+          - CH
+          - CX
+          - DB
+          - DT
+          - NU
+      name:
+        type: string
+        description: Free format short textual description.
+      values:
+        type: array
+        items:
+          $ref: '#/definitions/CatalogItemCharacteristicValue'
+        description: A number, text, or date that can be assigned to an instance of characteristic
+      
+  CatalogItemCharacteristicValue:
+    properties:
+      valueTo:
+        type: string
+        description: The upper range value that a range-type characteristic can take on. 
+      value:
+        type: string
+        description: A value that the characteristic can take on. In the case of a range value, this represents the lower value of the range. 
+
+  CatalogItemCharacteristicGroup:
+    properties:
+      characteristics:
+        type: array
+        items:
+          $ref: '#/definitions/CatalogItemCharacteristic'
+        description: Characteristics of the item
+      name: 
+        type: string
+        description: Free format short textual description
+  
+  ReturnConfigurationData:
+    properties:
+      productConfigurationInd:
+        type: boolean
+        description: Indicates that the entire configuration of the requested product/offer/bundle, the existing and the available options must be returned.  Mandatory - always send TRUE
+      catalogDataInd:
+        type: boolean
+        description: Indicates that the returned information includes the detailed catalog information of the requested product/offer/bundle.  Does not include prices.  Mandatory - always send TRUE.
+      quotedPricesInd:
+        type: boolean
+        description: Indicates that the returned information includes the quoted prices of the requested product/offer/bundle.  Prices do not include tax information.  Mandatory - always send TRUE.
+      summaryInd:
+        type: boolean
+        description: Indicates that the summary information of the requested product/offer/bundle must be returned.  The summary details include information of the catalog data and the instance information.  Summary details do not include pricing details.  Mandatory - always send TRUE.
+
+  ServiceabilityObject:
+    properties:
+      sys:
+        type: string
+        description: Value of SYS
+      prin:
+        type: string
+        description: Value of PRIN
+      agent:
+        type: string
+        description: Value of AGENT
+      LOBServiceability:
+        type: array
+        items:
+          $ref: '#/definitions/LOBServiceability'
+      availabilityGroup:
+        type: string
+        description: Parameter used for phone
+      dwellType:
+        type: string
+        description: Type used for competitive area     
+      customerIsNew:
+        type: boolean
+        description: Indicator to indicate whether this is a new (TRUE) or existing (FALSE) customer
+      customerHasActiveAccount:
+        type: boolean
+        description: Indicator to indicate whether the customer has n active account (TRUE) or not (FALSE)
+      customerType:
+        type: string
+        description: Business or Residential - all Residential in current release
+        enum:
+        - Business
+        - Residential
+      orderActionType:
+        type: string
+        description: Constrained LoV for Action Type (CH - Change, CE - Cease, SU - Suspend, HM - Change Move, RT - Restart, CR - Cease Restart, PR - Provide)
+        enum:
+        - CH
+        - CE
+        - SU
+        - HM
+        - RT
+        - CR
+        - PR
+      userRole:
+        type: string
+        description: User Role (CSR or manager)
+        enum: 
+        - manager
+        - CSR
+      offerCode:
+        type: array
+        items: 
+          type: string
+        description: list of specific offer codes or IDs
+      additional attributes:
+        type: array
+        items:
+          $ref: '#/definitions/AdditionalAttribute'
+        description: If some of the parameters for eligibility rules/serviceability are necessary (and were not in the initial list) can be added here
+
+  LOBServiceability:
+    properties:
+      LOBName:
+        type: string
+        description: Line Of Business name
+      LOBServiceStatus:
+        type: string
+        description: An indication if the LOB is serviceable or not
+
+  AdditionalAttribute:
+    properties:
+      name:
+        type: string
+        description: Custom attribute name
+      value: 
+        type: string
+        description: Custom attribute value
+
+  ImplRetrieveProductInOrderConfigurationResponse:
+    properties:
+      productOrderItemID:
+        type: string
+        description: The ID of the ProductOrderItem
+      productOrderItemReferenceNumber:
+        type: string
+        description: Reference number of the ProductOrderItem
+      productConfiguration:
+        type: object
+        $ref: '#/definitions/TopLevelConfiguration'
+        description: If the TopLevelProductConfiguration is not sent by the back end (only the SUMMARY mask was sent to Ordering) the rest doesn’t return the TopLevelProductConfiguration
+      productID:
+        type: string
+        description: ID of the product
+      productOrderItemType:
+        type: string
+        description: Action that is taken on the product  
+
+  ImplRetrieveProductInOrderConfigurationRequest:
+    properties:
+      activityForConfiguration:
+        type: string
+        description: The parameter used to filter the Product Catalog rules and the Activity Designer display information.  The activity name can have any value that represents the action performed by the client and does not necessarily have to map to an activity (step) in the ordering process.
+      serviceRequiredDate:
+        type: number
+        description: Charter must send system date.  Expects date as LONG.
+      configurationLevel:
+        type: string
+        description: The level of configuration to be returned.  Charter must always send FULL.
+        enum:
+        - FULL
+        - NOT_SELECTED
+      settingsView:
+        type: string
+        description: Need description
+        enum:
+        - FULL
+        - QUICK_SETTINGS
+      returnConfigurationData:
+        type: object
+        $ref: '#/definitions/ReturnConfigurationData'
+        description: Configuration Data
+
+  AllowedAction:
+    properties:
+      allowed:
+        type: boolean
+        description: Indicates whether the action is allowed or not for this Product
+      type:
+        type: string
+        description: Indicates the type of the action.  Constrained LoV (“AD”- Add, “ES” – Reestablish, “RM” – Remove, “RS” – Resume, “SU” – Suspend, “UP”- Change)
+        enum:
+        - AD
+        - ES
+        - RM
+        - RS
+        - SU
+        - UP
+
+  ImplErrorInfo:
+    properties:
+      errorCode:
+        type: string
+        description: Error code; single string.
+      description:
+        type: string
+        description: Error description.
+      errorMessage:
+        type: string
+        description: Human-readable error message.
+      errorUUID:
+        type: string
+        description: Unique identifier for the error instance.

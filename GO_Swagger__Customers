@@ -1,0 +1,1178 @@
+# this is draft #1 of the Customers component of the WebAPI specification for Gateway Ordering
+swagger: '2.0'
+info:
+  title: Gateway Ordering API - Customers API
+  description: Gateway Ordering Customers API
+  version: "1.0.0"
+# the domain of the service
+host: gateway.chartercom.com
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+  /accounts/v1:
+    get:
+      description: |
+        Searches for `Accounts` matching specified criteria, as defined by the query string parameters. This maps to an "Advanced Search" in which one or more parameter values are matched against the corresponding `Account` attributes. This approach may be used if the desired `Account` is too new to have been populated in the cache used by the "Quick Search" (**GET /searchableaccounts/v1**) or if the CSR desires more control over the search.
+      parameters:
+        -
+          name: accountNumber
+          in: query
+          description: Unique identifier for an `Account` that is published on customer correspondence (exact match)
+          required: false
+          type: string
+        -
+          name: phoneNumber
+          in: query
+          description: Primary telephone number of the customer (exact match)
+          required: false
+          type: string
+        -
+          name: locationId
+          in: query
+          description: Unique identifier of the physical location associated with the `Account` (exact match)
+          required: false
+          type: integer
+        -
+          name: familyName
+          in: query
+          description: Last name of customer(starts-with match)
+          required: false
+          type: string
+        -
+          name: givenName
+          in: query
+          description: First name of customer (starts-with match)
+          required: false
+          type: string
+        -
+          name: ssn
+          in: query
+          description: Social security number of customer (exact match)
+          required: false
+          type: string
+        -
+          name: addressLine1
+          in: query
+          description: Street address of location (starts-with match)
+          required: false
+          type: string
+        -
+          name: addressLine2
+          in: query
+          description: Second line of location's street address (starts-with match)
+          required: false
+          type: string
+        -
+          name: city
+          in: query
+          description: City name of location (starts-with match)
+          required: false
+          type: string
+        -
+          name: territoryCode
+          in: query
+          description: Two-character state abbreviation of location (exact match)
+          required: false
+          type: string
+        -
+          name: postalCode
+          in: query
+          description: Five digit zip code of location (exact match)
+          required: false
+          type: string
+        -
+          name: macAddress
+          in: query
+          description: MAC address of a `Device` associated with the `Account` (exact match)
+          required: false
+          type: string
+        -
+          name: macForCableModem
+          in: query
+          description: Value is *true* if the MAC address is for a cable modem, *false* if for a MTA. Relevant only if macAddress is present. If missing, assume *false*
+          required: false
+          type: boolean
+        -
+          name: serialNumber
+          in: query
+          description: Serial number of a `Device` (exact match)
+          required: false
+          type: string
+        -
+          name: jobNumber
+          in: query
+          description: Unique identifier of specific work performed as part of a `Work Order` for an `Account` (exact match)
+          required: false
+          type: string
+        -
+          name: orderNumber
+          in: query
+          description: Unique identifier of a `Work Order` (exact match)
+          required: false
+          type: string
+        -
+          name: limit
+          in: query
+          description: Number of items to include in the response
+          required: true
+          type: integer
+        -
+          name: offset
+          in: query
+          description: 0-based index within overall query results of the first item to include in the response
+          required: true
+          type: integer
+      tags:
+        - W02-GW
+
+      responses:
+        200:
+          description: An array of `Accounts` matching the specified criteria, sorted in descending order of search rank
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Account"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+
+  /customers:
+    get:
+      summary: Docref W02 - Retrieve customer ID, account ID, and related account information
+      description: Retrieves information on a person or entity previously known to Charter but who does not have a (readily previously identified) active account
+      parameters:
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+        - name: serviceAddressID
+          in: query
+          type: string
+          required: true
+          description: Address ID (SOLO) for which service is being requested.  Retrieved as part of the serviceability check performed earlier in the process flow.
+        - name: firstName
+          in: query
+          type: string
+          description: <dr>
+        - name: lastName
+          in: query
+          type: string
+          description: <dr>
+        - name: middleInitial
+          in: query
+          type: string
+          description: <dr>
+        - name: namePrefix
+          in: query
+          type: string
+          description: <dr>
+        - name: nameSuffix
+          in: query
+          type: string
+          description: <dr>
+        - name: primaryTN
+          in: query
+          type: string
+          description: <dr>
+        - name: primaryTNType
+          in: query
+          type: string
+          description: <dr>
+        - name: alternateTN
+          in: query
+          type: string
+          description: <dr>
+        - name: alternateTNType
+          in: query
+          type: string
+          description: <dr>
+        - name: otherTN
+          in: query
+          type: string
+          description: <dr>
+        - name: otherTNType
+          in: query
+          type: string
+          description: <dr>
+        - name: email
+          in: query
+          type: string
+          description: <dr>
+        - name: customerNumber
+          in: query
+          type: integer
+          description: <dr>
+#        - name: customerID
+#          in: query
+#          type: integer
+#          description: <dr>
+#        - name: addressID
+#          in: query
+#          type: integer
+#          description: <dr>
+
+      tags:
+        - W02-GO
+      responses:
+        200:
+          description: Successful completion; return key IDs
+          schema:
+            $ref: '#/definitions/GetCustomerIDResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /customers/{customerID}/PII:
+    post:
+      summary: Docref W11 precursor - Collect key personal identifying information (PII) for the specified customer.  Submitting the PII collection will trigger a credit check based on the PII supplied.
+      description: <dr>
+      parameters:
+        -
+          name: customerID
+          in: path
+          description: Unique identifier (from SOLO) for the Customer for which PII is being collected
+          required: true
+          type: string
+
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+#        - name: timestamp
+#          in: header
+#          required: true
+#          type: string
+#          format: date-time
+#          description: Time that the service call was invoked
+#        - name: invokingUser
+#          in: header
+#          required: true
+#          type: string
+#          description: User name for the actual user that invoked the call (for audit purpose)
+        - name: CustomerCreditCheckRequest
+          in: body
+          description: Incudes input parameters common to all invocations
+          required: true
+          schema: 
+            $ref: "#/definitions/CustomerCreditCheckRequest"
+      tags:
+        - W11
+      responses:
+        200:
+          description: Successful completion; return credit check result
+          schema:
+            $ref: '#/definitions/CustomerCreditCheckResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /customers/account/{accountID}:
+    get:
+      summary: Docref W14 - Get Landing Page Info
+      description: An orchestration of a number of enterprise services - getAccountStatus, getCustomerAndAccountDetails, getPastDueBalance, getOrderHistory, and getOutageInformation
+      parameters:
+        -
+          name: accountID
+          in: path
+          description: Unique identifier (from SOLO) for the account being updated
+          required: true
+          type: string
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+
+      tags:
+        - W14
+      responses:
+        200:
+          description: Successful completion; return expanded customer information
+          schema:
+            $ref: '#/definitions/GetLandingPageResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /customers/{customerID}:
+    get:
+      summary: Docref W17 - Retrieve key customer information
+      description: <dr>
+      parameters:
+        -
+          name: customerID
+          in: path
+          description: Unique identifier (from SOLO) for the Customer being queried
+          required: true
+          type: string
+
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+
+      tags:
+        - W17
+      responses:
+        200:
+          description: Successful completion; return expanded customer information
+          schema:
+            $ref: '#/definitions/GetCustomerInformationResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /customers/account/{accountID}/billAddress:
+    post:
+      summary: Docref W23 - update account billing address
+      description: <dr>
+      parameters:
+        -
+          name: accountID
+          in: path
+          description: Unique identifier (from SOLO) for the account being updated
+          required: true
+          type: string
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+#        - name: timestamp
+#          in: header
+#          required: true
+#          type: string
+#          format: date-time
+#          description: Time that the service call was invoked
+#        - name: invokingUser
+#          in: header
+#          required: true
+#          type: string
+#          description: User name for the actual user that invoked the call (for audit purpose)
+        - name: addressUpdate
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/addressUpdate'
+          description: The new billing address to be updated to
+#        - name: BillingAddressUpdateRequest
+#          in: body
+#          description: Incudes input parameters common to all invocations
+#          required: true
+#          schema: 
+#           $ref: "#/definitions/BillingAddressUpdateRequest"
+      tags:
+        - W23
+      responses:
+        200:
+          description: Successful completion; return updated account information
+          schema:
+            $ref: '#/definitions/BillingAddressUpdateResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /customers/account/{accountID}/eMailAddress:
+    post:
+      summary: Docref W23 - update account email address
+      description: <dr>
+      parameters:
+        -
+          name: accountID
+          in: path
+          description: Unique identifier (from SOLO) for the account being updated
+          required: true
+          type: string
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+#        - name: timestamp
+#          in: header
+#          required: true
+#          type: string
+#          format: date-time
+#          description: Time that the service call was invoked
+#        - name: invokingUser
+#          in: header
+#          required: true
+#          type: string
+#          description: User name for the actual user that invoked the call (for audit purpose)
+        - 
+          name: neweMailAddress
+          in: query
+          type: string
+          description: New email address
+#        - name: BillingAddressUpdateRequest
+#          in: body
+#          description: Incudes input parameters common to all invocations
+#          required: true
+#          schema: 
+#            $ref: "#/definitions/eMailAddressUpdateRequest"
+      tags:
+        - W27
+      responses:
+        200:
+          description: Successful completion; return updated account information
+          schema:
+            $ref: '#/definitions/eMailAddressUpdateResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+definitions:
+
+##############################################
+#
+#	Request/Response definitions
+#
+##############################################
+
+  GetCustomerIDResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+      partyID:
+        type: integer
+        description: Unique identifier for the selected party
+      partyType:
+        type: string
+        description: Party can be an Individual, Organization, or Manufacturer
+        enum:
+        - INDIV
+        - ORGN
+        - MANUF
+      indivBirthDate:
+        type: string
+        description: Birth date for an individual
+      indivGenderTypeCode:
+        type: string
+        description: Gender of the individual
+      indivGivenName:
+        type: string
+        description: First name of the individual
+      indivMiddleName:
+        type: string
+        description: Middle name of the individual
+      indivFamilyName:
+        type: string
+        description: Last name of the individual
+      indivNamePrefix:
+        type: string
+        description: Name prefix/Title of the individual (e.g. Mr, Mrs, Dr)
+      indivNameSuffix:
+        type: string
+        description: Name suffix of the individual (e.g. Jr, III, IV)
+      partyAddress:
+        type: array
+        items:
+          $ref: '#/definitions/postalAddress'
+      partyTelephone:
+        type: array
+        items:
+          $ref: '#/definitions/TelephoneNumber'
+      partyEMail:
+        type: array
+        items:
+          $ref: '#/definitions/EmailAddress'
+#      partyEMail:
+#        type: array
+#        item:
+#          $ref: '#/definitions/eMailAddress'
+      customerAccountLookupReturn:
+        type: array
+        items:
+          $ref: '#/definitions/customerAccountLookupReturn'
+        description: <dr>
+
+  GetCustomerInformationResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+#      CustomerInformationResponse:
+#        type: object
+#        $ref: '#/definitions/customerInformationReturn'
+      namePrefix:
+        type: string
+        description: Name prefix/title for an individual
+      firstName:
+        type: string
+        description: Given name
+      middleName:
+        type: string
+        description: Middle intitial/name for an individual
+      lastName:
+        type: string
+        description: Family name
+      nameSuffix:
+        type: string
+        description: Name suffix for an individual
+      primaryTN:
+        type: string
+        description: Primary telephone number
+      primaryTNType:
+        type: string
+        description: Primary telephone number type designation (home, work, cell, etc)
+      alternateTN:
+        type: string
+        description: Alternate telephone number
+      alternateTNType:
+        type: string
+        description: Alternate telephone number type designation (home, work, cell, etc)
+      OtherTN:
+        type: string
+        description: Other alternate telephone number
+      OtherTNType:
+        type: string
+        description: Other alternate telephone number type designation (home, work, cell, etc)
+      email:
+        type: string
+        description: <dr>
+      customerID:
+        type: integer
+        description: <dr>
+
+            
+  CustomerCreditCheckRequest:
+    properties:
+      firstName:
+        type: string
+        description: <dr>
+      lastName:
+        type: string
+        description: <dr>
+      namePrefix:
+        type: string
+        description: <dr>
+      middleInitial:
+        type: string
+        description: <dr>
+      nameSuffix:
+        type: string
+        description: <dr>
+      primaryTN:
+        type: string
+        description: <dr>
+      primaryTNType:
+        type: string
+        description: <dr>
+      alternateTN:
+        type: string
+        description: <dr>
+      alternateTNType:
+        type: string
+        description: <dr>
+      otherTN:
+        type: string
+        description: <dr>
+      otherTNType:
+        type: string
+        description: <dr>
+      eMail:
+        type: string
+        description: <dr>
+      currentAddress:
+        type: object
+        $ref: '#/definitions/postalAddress'
+      previousAddress:
+        type: object
+        $ref: '#/definitions/postalAddress'
+      PII:
+        type: object
+        $ref: '#/definitions/customerPII'
+        
+  CustomerCreditCheckResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+      customerCreditCheckReturn:
+        type: object
+        $ref: '#/definitions/customerCreditCheckReturn'
+        description: <dr>
+
+#  BillingAddressUpdateRequest:
+#    properties:
+#      commonInputHeader:
+#        type: object
+#        $ref: '#/definitions/CommonInputHeader'
+#        description: Common parameters submitted with all service calls to support authentication, reporting, logging and troubleshooting.
+#      addressUpdate:
+#        type: object
+#        $ref: '#/definitions/addressUpdate'
+#        description: <dr>
+                  
+  eMailAddressUpdateResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+
+#  eMailAddressUpdateRequest:
+#    properties:
+#      commonInputHeader:
+#        type: object
+#        $ref: '#/definitions/CommonInputHeader'
+#        description: Common parameters submitted with all service calls to support authentication, reporting, logging and troubleshooting.
+#      neweMailAddress :
+#        type: string
+#        description: New email address
+                  
+  BillingAddressUpdateResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+
+#  GetLandingPageRequest:
+#    properties:
+#      commonInputHeader:
+#        type: object
+#        $ref: '#/definitions/CommonInputHeader'
+#        description: Common parameters submitted with all service calls to support authentication, reporting, logging and troubleshooting.
+                  
+  GetLandingPageResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+      customerAccountStatus:
+        type: object
+        $ref: '#/definitions/customerAccountLookupReturn'
+        description: <dr>
+      customerAccountDetails:
+        type: object
+        $ref: '#/definitions/Account'
+        description: <dr>
+      customerPastDueBalance:
+        type: object
+        $ref: '#/definitions/customerCreditCheckReturn'
+        description: <dr>
+      customerOrderHistory:
+        type: object
+        $ref: '#/definitions/customerOrderHistory'
+        description: <dr>
+
+##############################################
+#
+#	Common Object definitions
+#
+##############################################
+
+#  CommonInputHeader:
+#    properties:
+#      username:
+#        type: string
+#        description: Encrypted username for proxy user authentication
+#      password:
+#        type: string
+#        description: Encrypted passaord for proxy user authentication
+#      invokingUser:
+#        type: string
+#        description: User name for the actual user that invoked the call (for audit purpose)
+#      applicationID:
+#        type: string
+#        description: Code identifying invoking application
+#      lineageID:
+#        type: integer
+#        description: Unique transaction identifier; used for transactional error handling
+#      timestamp:
+#        type: string
+#        description: Time that the service call was invoked
+
+  CommonNoErrorReturnHeader:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+        
+  CommonErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/CommonErrors"
+  
+  CommonErrors:
+    properties:
+      errCode:
+        type: string
+      errMessage:
+        type: string
+      errDescription:
+        type: string
+      errGUID:
+        type: string
+
+##############################################
+#
+#	Function-Specific Object definitions
+#
+##############################################
+
+#  customerAccountLookupInput:
+#    properties:
+#      firstName:
+#        type: string
+#        description: <dr>
+#      lastName:
+#        type: string
+#        description: <dr>
+#      primaryTN:
+#        type: string
+#        description: <dr>
+#      primaryTNType:
+#        type: string
+#        description: <dr>
+#      alternateTN:
+#        type: string
+#        description: <dr>
+#      alternateTNType:
+#        type: string
+#        description: <dr>
+#      email:
+#        type: string
+#        description: <dr>
+#      customerID:
+#        type: integer
+#        description: <dr>
+#      addressID:
+#        type: integer
+#        description: <dr>
+        
+  customerAccountLookupReturn:
+    properties:
+      customerType:
+        type: string
+        description: <dr>
+      accountID: 
+        type: integer
+        description: <dr>
+      accountNumber: 
+        type: string
+        description: <dr>
+      accountStatus:
+        type: string
+        description: <dr>
+      billerID:
+        type: integer
+        description: <dr>
+      customerID:
+        type: integer
+        description: <dr>
+      addressID:
+        type: integer
+        description: <dr>
+
+#  customerInformationReturn:
+#    properties:
+#      firstName:
+#        type: string
+#        description: Given name
+#      lastName:
+#        type: string
+#        description: Family name
+#      primaryTN:
+#        type: string
+#        description: Primary telephone number
+#      primaryTNType:
+#        type: string
+#        description: Primary telephone number type designation (home, work, cell, etc)
+#      alternateTN:
+#        type: string
+#        description: Alternate telephone number
+#      alternateTNType:
+#        type: string
+#        description: Alternate telephone number type designation (home, work, cell, etc)
+#      OtherTN:
+#       type: string
+#       description: Other alternate telephone number
+#      OtherTNType:
+#        type: string
+#        description: Other alternate telephone number type designation (home, work, cell, etc)
+#      email:
+#        type: string
+#        description: <dr>
+#      customerID:
+#        type: integer
+#        description: <dr>
+          
+  postalAddress:
+    properties:
+      addressID:
+        type: string
+        description: Unique identifier for the address
+      addressLine1:
+        type: string
+        description: <dr>
+      addressLine2:
+        type: string
+        description: <dr>
+      addressCity:
+        type: string
+        description: <dr>
+      addressStateCode:
+        type: string
+        description: <dr>
+      addressZIPCode:
+        type: string
+        description: <dr>
+        
+  customerPII:
+    properties:
+      socialSecurityNumber:
+        type: string
+        description: <dr>
+      driverLicenseNumber:
+        type: string
+        description: <dr>
+      driverLicenseStateCode:
+        type: string
+        description: <dr>
+      dateOfBirth:
+        type: string
+        format: date
+        description: <dr>
+
+  customerCreditCheckReturn:
+    properties:
+      experianPIN:
+        type: string
+        description: <dr>
+      BadAccountInformation:
+        type: array
+        items:
+          $ref: '#/definitions/DerogatoryCreditInformation'
+      FTAPrepaymentRequiredFlag:
+        type: boolean
+        description: <dr>
+      creditHistoryRankingAssessment:
+        type: string
+        description: <dr>
+      
+  DerogatoryCreditInformation:    
+    properties:
+      accountNumber:
+        type: string
+        description: <dr>
+      outstandingBalance:
+        type: number
+        format: double
+        description: <dr>
+      nonPayDisconnectStatus:
+        type: string
+        description: <dr>
+      unreturnedEquipmentFlag:
+        type: boolean
+        description: <dr>
+      prepayRequired:
+        type: boolean
+        description: <dr>
+      prepayAmountBadDebt:
+        type: number
+        format: double
+      prepayAmountUnreturnedEquipment:
+        type: number
+        format: double
+
+  customerOrderHistory:
+    properties:
+      orderHistory:
+        type: array
+        items:
+          $ref: '#/definitions/orderHeader'
+          
+  orderHeader:
+    properties:
+      orderID:
+        type: number
+        format: int32
+        description: Unique order identifier in biller isolation/SOLO
+      orderNumber:
+        type: string
+        description: Order number as set in the billing system
+      orderStatus:
+        type: string
+        description: Status of the order
+      orderActionType:
+        type: string
+        description: <dr>
+      orderCreationDate:
+        type: string
+        format: date
+        description: <dr>
+#      salesAgentName:
+#        type: string
+#        description: <dr>
+      salesAgentID:
+        type: string
+        description: <dr>
+#      orderAmount:
+#        type: number
+#        description: <dr>
+      disconnectType:
+        type: string
+        description: <dr>
+      
+
+        
+  addressUpdate:
+    properties:
+      newAddress:
+        type: object
+        $ref: '#/definitions/postalAddress'
+
+  Account:
+    description: If an active Account does not yet exist for a Customer-Location (which could be the case for Gateway Ordering), the Account representation would still be used, but status would be "Pending" and the non-Customer-Location attributes would be blank/empty
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `Account`
+      number:
+        type: string
+        description: Traditionally, another unique identifier for an `Account`, although this will no longer be guaranteed as new billing systems are introduced. This number is published on customer correspondence
+      type:
+        type: string
+      status:
+        type: string
+        enum:
+        - Active
+        - Inactive
+        - Never
+        - Pending
+      billingAddress:
+        $ref: "#/definitions/Address"
+      serviceAddress:
+        $ref: "#/definitions/Address"
+      sourceStreetAddress:
+        $ref: "#/definitions/Address"
+      primaryPhone:
+        $ref: "#/definitions/TelephoneNumber"
+      alternatePhone:
+        $ref: "#/definitions/TelephoneNumber"
+      otherPhone:
+        $ref: "#/definitions/TelephoneNumber"
+        description: Added by GO
+      emailAddress:
+        $ref: "#/definitions/EmailAddress"
+      ppvLimit:
+        type: number
+      securityCode:
+        type: string
+      creditClass:
+        type: string
+      bulkFlag:
+        type: boolean
+      paperlessFlag:
+        type: boolean
+      authorizedUsers:
+        type: array
+        items:
+          type: string
+      associatedAccounts:
+        type: array
+        items:
+          $ref: "#/definitions/AccountIdentity"
+      securityChallenge:
+        $ref: "#/definitions/Challenge"
+      individual:
+        $ref: "#/definitions/Individual"
+      location:
+        $ref: "#/definitions/Location"
+      links:
+        type: array
+        items:
+          $ref: "#/definitions/Link"
+
+  AccountIdentity:
+    description: Only those attributes of an `Account` that identify it from a system or CSR standpoint
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `Account`
+      number:
+        type: string
+        description: Traditionally, another unique identifier for an `Account`, although this will no longer be guaranteed as new billing systems are introduced. This number is published on customer correspondence
+
+  Address:
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `Address`, potentially allowing for independent updates
+      line1:
+        type: string
+      line2:
+        type: string
+      city:
+        type: string
+      territoryCode:
+        type: string
+      postalCode:
+        type: string
+
+  TelephoneNumber:
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for a `TelephoneNumber`, potentially allowing for independent updates
+      number:
+        type: string
+
+  EmailAddress:
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for an `EmailAddress`, potentially allowing for independent updates
+      text:
+        type: string
+
+  Challenge:
+    properties:
+      question:
+        type: string
+      answer:
+        type: string
+
+  Individual:
+    description: A person accountable for purchases of `Services`
+    properties:
+      id:
+        type: integer
+      givenName:
+        type: string
+      familyName:
+        type: string
+      ssn:
+        type: string
+      employeeFlag:
+        type: boolean
+
+  Location:
+    description: A physical location to which `Services` are delivered
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      routingArea:
+        type: string
+      sysprin:
+        type: string
+      agentId:
+        type: string
+      rateCenter:
+        type: string
+      node:
+        type: string
+      level1:
+        type: string
+      level2:
+        type: string
+      headend:
+        type: string
+      comments:
+        type: string
+
+  Link:
+    description: A link to a related resource (usually a child)
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+
+  Error:
+    description: An error condition
+    properties:
+      userMessage:
+        type: string
+        description: A user-friendly message describing the error and (ideally) what to do about it
+      devopsMessage:
+        type: string
+        description: A detailed message containing information of use to developers or operations people
+
+#  ValidationError:
+#    description: A collection of global and attribute-level validation errors
+#    properties:
+#      attribute:
+#        type: string
+#      errors:
+#        type: array
+#        items:
+#          type: string

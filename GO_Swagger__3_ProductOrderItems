@@ -1,0 +1,309 @@
+# this is draft #1 of the comprehensive WebAPI specification for interfacing with the AMDOCS Order Engine
+swagger: '2.0'
+info:
+  title: Gateway Ordering API - AMDOCS Interface (ProductOrderItems)
+  description: This specification defines the interface between WebAPI and the AMDOCS Ordering Engine.  Note - all dates represented in EpochTime (milliseconds since 1/1/1970 00:00:00 GMT)
+  version: "1.0.0"
+# the domain of the service
+host: gateway.chartercom.com
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+  /commerce/customer/{customer-id}/product-order/{product-order-id}/product-order-items:
+    get:
+      summary: Docref W4_step2 - retrieve Products for the selected offer(s) in the order.
+      description: The Product Order Items REST service retrieves high level information of products and associated Order Actions which are included in the current order based on the OE Order ID provided as input. This information will be used later for retrieving the configuration per product. Must be called once separately for each offer selected for inclusion in the order. 
+      parameters:
+        - name: customer-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: product-order-id
+          in: path
+          type: string
+          required: true
+          description: <dr>
+        - name: username
+          in: header
+          type: string
+          description: authentication username for proxy connection
+          required: true
+        - name: password
+          in: header
+          type: string
+          description: authentication password for proxy connection
+          required: true
+        - name: applicationID
+          in: header
+          type: string
+          description: Unique designation for the invoking application (e.g. GatewayOrdering)
+          required: true
+        - name: timestamp
+          in: header
+          type: integer
+          format: int64
+          description: time the REST call was invoked, in EpochTime format
+          required: true
+        - name: sc
+          required: true
+          in: query
+          type: string
+          description: Sales Channel identifier
+        - name: locale
+          required: true
+          in: query
+          type: string
+          description: Locale identifier, used for language translation
+      tags:
+        - W4_Step2
+      responses:
+        200:
+          description: Succesful operation; return products associated with selected offers
+          schema:
+            $ref: '#/definitions/implProductOrderItemsResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+definitions:
+
+  CommonErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+          type: integer
+          format: int64
+          description: time the REST call was returned, in EpochTime format
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/ImplErrorInfo"
+  
+  ImplErrorInfo:
+    properties:
+      errorCode:
+        type: string
+        description: Error code, single string
+      errorMessage:
+        type: string
+        description: Error message
+      Description:
+        type: string
+        description: Description of the error (human-readable)
+      errorUUID:
+        type: string
+        description: Unique number to identify the error event
+
+  implProductOrderItemsResponse:
+    properties:
+      implProductOrderItemHeaders:
+        type: object
+        $ref: '#/definitions/implProductOrderItemHeaders'
+      transactionID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+          type: integer
+          format: int64
+          description: time the REST call was returned, in EpochTime format
+      implErrorInfo:
+        type: array
+        items:
+          $ref: '#/definitions/ImplErrorInfo'
+        description: Used for business errors
+
+  implProductOrderItemHeaders:
+    properties:
+      productOrderItemHeaders:
+        type: array
+        items:
+          $ref: '#/definitions/ImplOrderItemHeader'
+
+  ImplOrderItemHeader:
+    properties:
+      productOfferingInstanceID:
+        type: string
+        description: Assigned Product ID 
+      productOfferingName:
+        type: string
+        description: The product offering name (Catalog Name) of the product related to the OrderItem.
+      implCalculatedPrices:
+        type: array
+        items:
+          $ref: '#/definitions/implCalculatedPrice'
+      referenceNumber:
+        type: string
+        description: A unique string that identifies the order item and is typically displayed to human users on screens and reports.  Generally derived as Item Number + "A"
+      productID:
+        type: string
+        description: Product ID
+      serviceRequiredDate:
+        type: integer
+        format: int64
+        description: Date on which the customer wishes to receive service for the product in the Order Item.  Represented in EpochTime (milliseconds since 1/1/1970 00:00:00 GMT)
+      productServiceID:
+        type: string
+        description: Product Subscription Number
+      productName:
+        type: string
+        description: Product catalog name
+      allowedActions:
+        type: array
+        items:
+          type: string
+        description: Constrained of allowed actions
+        enum:
+          - AMEND
+          - CANCEL
+          - CANCEL_OFFER
+          - CANCEL_PARTIAL
+          - CANCEL_REPLACE_OFFER
+          - CREATE
+          - DISCONTINUE
+          - EDIT
+          - RESUME_NEGOTIATION
+          - TAKEOVER
+          - WITHDRAW_AMEND
+          - WITHDRAW_CANCEL
+      createdBy:
+        type: string
+        description: The USER ID that initiated the request
+      ActionType:
+        type: string
+        description: Constrained list of action to be performed on the associated product in teh context of this order item.
+        enum:
+        - ADD_ACCESSORY
+        - ADD_PRICE_PACKAGE
+        - ADD_PRODUCT
+        - ADD_SERVICE
+        - ALIGN_PRODUCT_BOT
+        - CEASE_MOVE
+        - CHANGE_BOT
+        - CHANGE_OWNERSHIP
+        - CHANGE_PLAN_DEVICE
+        - CHANGE_PRODUCT
+        - MOVE_PRODUCT
+        - NEW_BOT_PRODUCT
+        - NOTIFY_DISCOUNTS
+        - PROVIDE_FWA
+        - PROVIDE_MOVE
+        - REESTABLISH_PRODUCT
+        - REMOVE_PRODUCT
+        - RESUME_PRODUCT
+        - SUSPEND_PRODUCT
+        - UPDATE_CONTACT        
+      productCatalogID:
+        type: string
+        description: Product catalog ID
+      lineOfBusiness:
+        type: string
+        description: Line of business
+      isPartOfBundle:
+        type: boolean
+        description: Indicator to represent if the product is part of a Bundle offer
+      productLevel:
+        type: string
+        description: Billing level at which pricing can be applied (Group or Subscription)
+      ID:
+        type: string
+        description: Order Action ID
+      status:
+        type: string
+        description: Constrained LoV to represent the lifecycle status of the order item
+        enum:
+        - CANCELED
+        - COMPLETION
+        - DELIVERY
+        - DONE
+        - FUTURE
+        - INITIAL
+        - NEGOTIATION
+        - REJECT
+        - TO_BE_CANCELED
+
+  implCalculatedPrice:
+    properties:
+      sequenceId:
+        type: integer
+        description: Sequence ID
+      ppCid:
+        type: string
+        description: The Price Plan Catalog ID (PPCID) 
+      ppType:
+        type: string
+        description: <description required>
+      tierFrom:
+        type: string
+        description: <description required>
+      tierTo:
+        type: string
+        description: <description required>
+      quantityAtt:
+        type: string
+        description: <description required>
+      quantityFrom:
+        type: integer
+        description: <description required>
+      quantityTo:
+        type: integer
+        description: <description required>
+      amountType:
+        type: string
+        description: <description required>
+      amount:
+        type: integer
+        description: <description required>
+      quantity:
+        type: integer
+        description: <dr>
+      startDate:
+       type: integer
+       format: int64
+       description: The Price Plan effective date.  
+      endDate:
+       type: integer
+       format: int64
+       description: The Price Plan end date.  
+      biller:
+        type: string
+        description: Name of the biller (default to CSG for GO R2 scope)
+      market:
+        type: string
+        description: Name of the market
+      subMarket:
+        type: string
+        description: Name of the sub-market
+      ftaFrom:
+        type: string
+        description: FTA From
+      ftaTo:
+        type: string
+        description: FTA To
+      custType:
+        type: string
+        description: Type of customer
+      code:
+        type: string
+        description: Value of the CSG Code
+      codeType:
+        type: string
+        description: Constrained LoV (Installation, Service Code, Package Code, Tracking Code, Discount) of type of the code to be sent to the biller (for CSG Maintenance use)
+        enum:
+        - I
+        - S
+        - P
+        - T
+        - D
+      basicItemQuantity:
+        type: integer
+        description: Number of instances of price entity
+      

@@ -1,0 +1,415 @@
+# this is draft #1 of the Locations component of the WebAPI specification for Gateway Ordering
+swagger: '2.0'
+info:
+  title: Gateway Ordering API - Locations API
+  description: Gateway Ordering Locations API
+  version: "1.0.0"
+# the domain of the service
+host: gateway.chartercom.com
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+
+  /serviceability:
+    get:
+      summary: Get location serviceability based on address parameters
+      description: Given only a set of address parameters, return the LoB Serviceability for that location.  Relies on the EA service to find the addressID given the address parameters.
+      parameters:
+        - name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+        - name: addrStreetLine1
+          type: string
+          in: query
+          required: true
+          description: Line 1 of the street address component of the address lookup 
+        - name: addrStreetLine2
+          type: string
+          in: query
+          required: false
+          description: Line 2 of the street address component of the address lookup  
+        - name: addrCity
+          type: string
+          in: query
+          required: false
+          description: City component of the address lookup
+        - name: addrState
+          type: string
+          in: query
+          required: false
+          description: State component of the address lookup
+        - name: addrZIP
+          type: string
+          in: query
+          required: false
+          description: ZIP Code component of the address lookup
+
+      tags:
+        - W18
+      responses:
+        200:
+          description: Successful completion; return location ID from SOLO
+          schema:
+            $ref: '#/definitions/ServiceabilityAtLocationResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  
+  /serviceability/{AddressID}:
+    get:
+      summary: Docref W13, W18 - Determine serviceability at location/address
+      description: Determine the products and services eligible for sale at the requested address/location.  Does not rely on the EA service to findAddressID; assumes this is provided by other means such as Adaptive Search. The same service will be used to determine both "New Connect" location service compatability as well as "Transfer-To" Location service compatability.  Boolean value for serviceability (is/is not serivceable) can be inferred from the existence of rows in the service return data set. 
+      parameters:
+        - 
+          name: AddressID
+          in: path
+          required: true
+          type: integer
+          description: Unique identifier for the address/location being queried for serviceability
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+
+      tags:
+        - W13
+        - W18
+      responses:
+        200:
+          description: Successful completion; return location serviceability
+          schema:
+            $ref: '#/definitions/ServiceabilityAtLocationResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /serviceability/{AddressID}/Active:
+    get:
+      summary: Docref W16 - Get active services at location
+      description: Retrieves the list of products and services currently active at the queried address/location.
+      parameters:
+        - name: AddressID
+          in: path
+          required: true
+          type: integer
+          description: Unique identifier for the address being checked
+        - 
+          name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - 
+          name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+
+      tags:
+        - W16
+      responses:
+        200:
+          description: Successful completion; return <function>
+          schema:
+            $ref: '#/definitions/ActiveServicesAtLocationResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+  /serviceability/{AddressId}/pendingDisconnect:
+    get:
+      summary: Get pending disconnect date by address
+      description: Retrieve the scheduled disconnect date for services at the location.  Date will be sysdate if no active services at location, the scheduled disconnect date if an order is placed, or the end of time date if services are active at the location and no disconnect order is placed.  Date represents the earliest date new services can be provided.
+      parameters:
+        - name: AddressId
+          in: path
+          required: true
+          type: integer
+          description: Unique identifier for the address/location being queried for serviceability
+        - name: X-Charter-Transaction-ID
+          in: header
+          required: true
+          type: string
+          description: Unique transaction identifier; used for transactional error handling
+        - name: X-Charter-Application-ID
+          in: header
+          required: true
+          type: string
+          description: Code identifying invoking application or sales channel
+
+      tags:
+        - W01
+      responses:
+        200:
+          description: Successful completion; return pending disconnect date.  
+          schema:
+            $ref: '#/definitions/PendingDisconnect'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+definitions:
+
+##############################################
+#
+#	Request/Response definitions
+#
+##############################################
+
+  ServiceabilityAtLocationResponse:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      Result:
+        type: object
+        $ref: '#/definitions/eiaResultHeader'
+      ServiceabiltyResult:
+        type: object
+        $ref: '#/definitions/cciaServiceability'
+
+  ActiveServicesAtLocationResponse:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      ActiveServicesByAccount:
+        type: array
+        items:
+          $ref: '#/definitions/LoBLocationAccountActiveProduct'
+
+##############################################
+#
+#	Common Object definitions
+#
+##############################################
+
+  CommonErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/CommonErrors"
+  
+  CommonErrors:
+    properties:
+      errCode:
+        type: string
+      errMessage:
+        type: string
+      errDescription:
+        type: string
+      errGUID:
+        type: string
+
+##############################################
+#
+#	Function-Specific Object definitions
+#
+##############################################
+
+  LoBLocationAccountActiveProduct:
+    properties:
+      accountID:
+        type: integer
+        description: Unique identifier for account in biller isolation layer
+      accountServices:
+        type: array
+        items:
+          $ref: '#/definitions/AccountService'
+    
+  AccountService:  
+    properties:  
+      lobName:
+        type: string
+        description: Line of Business (e.g. PHONE, TV, INTERNET)
+      lobProduct:
+        type: string
+        description: Specific product within the LoB being referenced for serviceability
+      biller:
+        type: string
+        description: Designator for which billing system serves the particular address in question 
+        
+  cciaServiceability:
+    properties:
+      addressLine1:
+        type: string
+        description: First line of address returned
+      city:
+        type: string
+        description: City of address returned
+      state:
+        type: string
+        description: State of address returned
+      ZipCode:
+        type: string
+        description: Base ZIP Code of address returned
+      ZipCode4:
+        type: string
+        description: ZIP+$ extension of address returned
+      BillingSystem:
+        type: string
+        description: Billing system location ID
+      HouseRef:
+        type: string
+        description: Billing system house reference
+      EntityID:
+        type: string
+        description: billing system entity ID
+      FTA:
+        type: string
+        description: Franchise Tax Area of address returned
+      BillingProvider:
+        type: string
+        description: Billing provider for the address returned
+      Status:
+        type: string
+        description: Service status (ACTIVE, PAST, NEVER) for Charter services at the address returned
+        enum:
+        - ACTIVE
+        - NEVER
+        - DISCONNECT
+      Sys:
+        type: string
+        description: SYS for address returned
+      Prin:
+        type: string
+        description: PRIN for address returned
+      Agent:
+        type: string
+        description: AGENT for address returned
+      Co:
+        type: string
+        description: COMPANY of address returned
+      Div:
+        type: string
+        description: DIVISION of address returned
+      RateCenter:
+        type: string
+        description: Controlling Rate Center of address returned
+      Bulk:
+        type: boolean
+        description: Bulk indicator
+      NonPay:
+        type: boolean
+        description: An account at returned address is in NON-PAY status
+      OverbuilderIndicator:
+        type: string
+        description: Address returned is part of overbuilder complex
+      DwellingTypeCategory:
+        type: string
+        description: Category of dwelling at returned address
+        enum:
+        - OTHER
+      DwellType:
+        type: string
+        description: Dwelling Type
+      LocationStatus:
+        type: string
+        description: Code representing specific serviceability (e.g. S7)
+      DeliverySegmentIndicatorCable:
+        type: string
+        description: Cable service segment indicator
+      DeliverySegmentIndicatorInternet:
+        type: string
+        description: Internet service segment indicator
+      DeliverySegmentIndicatorTelephone:
+        type: string
+        description: Telephone service segment indicator
+      ServiceStatusCable:
+        type: string
+        description: cable service status code
+      ServiceStatusInternet:
+        type: string
+        description: Internet service status code
+      ServiceStatusTelephone:
+        type: string
+        description: Telephone service status code
+      Service:
+        type: array
+        items:
+          $ref: '#/definitions/serviceServiceability'
+      
+  serviceServiceability:
+    properties:
+      Description: 
+        type: string
+        description: service description
+      Available:
+        type: boolean
+        description: Evaluation of `Service Is Available?`
+        
+  eiaResultHeader:
+    properties:
+      ReturnCode:
+        type: string
+        description: Indicator if process successfully completed
+      ReferenceCode:
+        type: string
+        description: Unique identifier for the specific service transaction (passed from sender?)
+      Type:
+        type: string
+        description: Type of message
+      Description:
+        type: string
+        description: Description of service message
+      DateTime:
+        type: string
+        format: date
+        description: date/time that the service returned
+      Source:
+        type: string
+        description: Invoking service call
+      Server:
+        type: string
+        description: Server node on which service was implemented 
+
+  PendingDisconnect:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      disconnectDate: 
+        type: string
+        description: Earliest date a new install could be scheduled

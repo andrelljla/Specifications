@@ -1,0 +1,147 @@
+# this is draft #1 of the Customers component of the WebAPI specification for Gateway Ordering
+swagger: '2.0'
+info:
+  title: Gateway Ordering API - Customers API
+  description: Gateway Ordering Customers API
+  version: "1.0.0"
+# the domain of the service
+host: gateway.chartercom.com
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /v1
+produces:
+  - application/json
+paths:
+  /function:
+    get:
+      summary: <dr>
+      description: <dr>
+      parameters:
+        - name: FunctionRequest
+          in: body
+          description: Incudes input parameters common to all invocations
+          required: true
+          schema: 
+            $ref: "#/definitions/FunctionRequest"
+      tags:
+        - <XXX>
+      responses:
+        200:
+          description: Successful completion; return key IDs
+          schema:
+            $ref: '#/definitions/FunctionResponse'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/CommonErrorReturn'
+
+definitions:
+
+##############################################
+#
+#	Request/Response definitions
+#
+##############################################
+
+  FunctionRequest:
+    properties:
+      commonInputHeader:
+        type: object
+        $ref: '#/definitions/CommonInputHeader'
+        description: Common parameters submitted with all service calls to support authentication, reporting, logging and troubleshooting.
+      FunctionInput:
+        type: object
+        $ref: '#/definitions/FunctionInput'
+        description: <dr>
+                  
+  FunctionResponse:
+    properties:
+      commonReturn: 
+        type: object
+        $ref: '#/definitions/CommonNoErrorReturnHeader'
+        description: <dr>
+      FunctionReturn:
+        type: object
+        $ref: '#/definitions/FunctionReturn'
+        description: <dr>
+
+
+##############################################
+#
+#	Common Object definitions
+#
+##############################################
+
+  CommonInputHeader:
+    properties:
+      username:
+        type: string
+        description: Encrypted username for proxy user authentication
+      password:
+        type: string
+        description: Encrypted passaord for proxy user authentication
+      invokingUser:
+        type: string
+        description: User name for the actual user that invoked the call (for audit purpose)
+      applicationID:
+        type: string
+        description: Code identifying invoking application
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was invoked
+
+  CommonNoErrorReturnHeader:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+        
+  CommonErrorReturn:
+    properties:
+      lineageID:
+        type: integer
+        description: Unique transaction identifier; used for transactional error handling
+      timestamp:
+        type: string
+        description: Time that the service call was returned
+      errorInfo:
+        type: array
+        items:
+          $ref: "#/definitions/CommonErrors"
+  
+  CommonErrors:
+    properties:
+      errCode:
+        type: string
+      errMessage:
+        type: string
+      errDescription:
+        type: string
+      errGUID:
+        type: string
+
+##############################################
+#
+#	Function-Specific Object definitions
+#
+##############################################
+
+  FunctionInput:
+    properties:
+      foo:
+        type: string
+        description: <dr>
+        
+  FunctionReturn:
+    properties:
+      foo:
+        type: string
+        description: <dr>

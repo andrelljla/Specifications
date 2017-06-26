@@ -1,0 +1,126 @@
+swagger: '2.0'
+
+info:
+  version: "1.0.0"
+  title: Payment resource
+  description: A `Payment` is a financial transaction that is applied for an `Account` against one or more `Statements` (or indeed partial `Statements`).
+consumes:
+- application/json
+produces:
+- application/json
+
+paths:
+  /accounts/v1/{id}/payments:
+    post:
+      description: |
+        Records a `Payment` for the Account whose ID is specified in the URI.
+      parameters:
+        -
+          name: id
+          in: path
+          description: Unique identifier for an `Account`
+          required: true
+          type: integer
+        -
+          name: payment
+          in: body
+          description: New `Payment` information.
+          required: true
+          schema:
+            $ref: "#/definitions/Payment"
+      responses:
+        200:
+          description: A representation of the recorded `Payment`, including a confirmation value
+          schema:
+            $ref: "#/definitions/Payment"
+        422:
+          description: The new `Payment` information did not pass validation.
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/ValidationError"
+        default:
+          description: Unexpected error
+          schema:
+            $ref: "#/definitions/Error"
+definitions:
+  Payment:
+    description: Note that the electronicFundsTransfer and creditCard elements are mutually exclusive.
+    properties:
+      amount:
+        type: number
+        description: Will be ignored (and can be omitted) if creditCard/recurring = true
+      serviceFee:
+        $ref: "#/definitions/ServiceFee"
+      electronicFundsTransfer:
+        $ref: "#/definitions/ElectronicFundsTransfer"
+      creditCard:
+        $ref: "#/definitions/CreditCard"
+      confirmation:
+        type: string
+        description: Will be populated in the response to provide a tracking number (aka confirmation token) for an accepted `Payment`
+  ServiceFee:
+    properties:
+      id:
+        type: integer
+      amount:
+        type: number
+      adjustmentType:
+        type: string
+      serviceCode:
+        type: string
+      reasonCode:
+        type: string
+      approvalReasonCode:
+        type: string
+      autoApprove:
+        type: string
+  ElectronicFundsTransfer:
+    properties:
+      bankRoutingNumber:
+        type: integer
+      bankAccountNumber:
+        type: integer
+      bankAccountType:
+        type: string
+        enum:
+          - Checking
+          - Savings
+          - Unknown
+  CreditCard:
+    properties:
+      type:
+        type: string
+        enum:
+          - American Express
+          - Discover
+          - MasterCard
+          - Visa
+      number:
+        type: integer
+      nameOnCard:
+        type: string
+      expirationMonth:
+        type: string
+      expirationYear:
+        type: string
+      recurring:
+        type: boolean
+  Error:
+    description: An error condition
+    properties:
+      userMessage:
+        type: string
+        description: A user-friendly message describing the error and (ideally) what to do about it
+      devopsMessage:
+        type: string
+        description: A detailed message containing information of use to developers or operations people
+  ValidationError:
+    description: A collection of global and attribute-level validation errors
+    properties:
+      attribute:
+        type: string
+      errors:
+        type: array
+        items:
+          type: string
